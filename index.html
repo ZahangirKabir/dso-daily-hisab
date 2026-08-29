@@ -3,353 +3,237 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Accounts Management App</title>
-  <!-- OCR Library for Bank Name Detection -->
-  <script src="https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js"></script>
+  <title>DSO & Admin Collection Portal</title>
+  <script src="https://cdn.jsdelivr.net/npm/tesseract.js@4/dist/tesseract.min.js"></script>
   <style>
-    body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background: #eef2f3; margin: 0; padding: 15px; }
-    .card { background: #fff; padding: 20px; border-radius: 12px; box-shadow: 0 4px 10px rgba(0,0,0,0.08); max-width: 650px; margin: 0 auto 20px auto; }
-    h2, h3, h4 { color: #00796b; margin-top: 0; }
-    label { font-weight: bold; font-size: 14px; color: #333; }
-    input, select, button { width: 100%; padding: 12px; margin: 8px 0 16px 0; border: 1px solid #ccc; border-radius: 6px; box-sizing: border-box; font-size: 14px; }
-    button { background: #00796b; color: white; border: none; font-weight: bold; cursor: pointer; border-radius: 6px; font-size: 16px; }
-    button:hover { background: #004d40; }
-    .btn-logout { background: #e53935; width: auto; padding: 8px 16px; font-size: 14px; float: right; margin: 0; }
-    .btn-logout:hover { background: #c62828; }
-    .hidden { display: none; }
-    .header-flex { display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px; }
-    .denom-row { display: flex; align-items: center; gap: 10px; margin-bottom: 5px; }
-    .denom-row label { width: 80px; margin: 0; }
-    .denom-row input { margin: 0; }
+    * { box-sizing: border-box; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; margin: 0; padding: 0; }
+    body { background-color: #f4f7f6; padding: 15px; color: #333; }
+    .container { max-width: 1200px; margin: 0 auto; background: #fff; padding: 20px; border-radius: 8px; box-shadow: 0 4px 12px rgba(0,0,0,0.1); }
+    h2 { color: #00695c; margin-bottom: 15px; }
     
-    table { width: 100%; border-collapse: collapse; margin-top: 10px; font-size: 11px; }
-    th, td { border: 1px solid #ddd; padding: 8px; text-align: center; }
-    
-    th.th-base { background: #37474f; color: white; }
-    th.th-rec { background: #2e7d32; color: white; }
-    th.th-ret { background: #c62828; color: white; }
-    th.th-cash { background: #00796b; color: white; }
-    th.th-slip { background: #0288d1; color: white; }
-    
-    .total-box { background: #e0f2f1; padding: 10px; border-radius: 6px; border: 1px solid #80cbc4; text-align: center; margin-bottom: 15px; }
-    
-    .summary-box { display: flex; gap: 10px; margin-bottom: 15px; }
-    .sub-sum-box { flex: 1; background: #e8f5e9; padding: 10px; border-radius: 6px; border: 1px solid #a5d6a7; text-align: center; }
-    .sub-sum-box h4 { margin: 0 0 5px 0; font-size: 13px; color: #1b5e20; }
-    .sub-sum-box p { margin: 0; font-size: 15px; font-weight: bold; color: #2e7d32; }
+    .login-box { max-width: 400px; margin: 50px auto; padding: 25px; border: 1px solid #ccc; border-radius: 8px; background: #fff; text-align: center; }
+    .login-box input { width: 100%; padding: 10px; margin: 10px 0; border: 1px solid #ccc; border-radius: 4px; }
+    .btn { background: #00695c; color: white; padding: 10px 15px; border: none; border-radius: 4px; cursor: pointer; font-size: 16px; width: 100%; }
+    .btn:hover { background: #004d40; }
+    .btn-logout { background: #d32f2f; width: auto; float: right; }
 
-    .dashboard-cards { display: flex; gap: 10px; margin-bottom: 15px; flex-wrap: wrap; }
-    .dash-card { flex: 1; min-width: 120px; background: #e0f2f1; padding: 12px; border-radius: 8px; text-align: center; border: 1px solid #b2dfdb; }
-    .dash-card h4 { margin: 0 0 5px 0; font-size: 12px; color: #004d40; }
-    .dash-card p { margin: 0; font-size: 15px; font-weight: bold; color: #00796b; }
+    .header-bar { overflow: hidden; margin-bottom: 20px; }
+    .header-bar h2 { float: left; }
 
-    .filter-box { display: flex; gap: 10px; margin-bottom: 10px; flex-wrap: wrap; }
-    .filter-box input { margin: 0; }
+    .summary-cards { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 15px; margin-bottom: 20px; }
+    .card { background: #e0f2f1; padding: 15px; border-radius: 6px; text-align: center; }
+    .card h3 { font-size: 14px; color: #004d40; margin-bottom: 5px; }
+    .card p { font-size: 20px; font-weight: bold; color: #00695c; }
+    .card.red { background: #ffebee; } .card.red p { color: #c62828; }
+    .card.green { background: #e8f5e9; } .card.green p { color: #2e7d32; }
 
-    .sec-rec-title { color: #2e7d32; border-bottom: 2px solid #2e7d32; padding-bottom: 4px; margin-top: 10px; }
-    .sec-ret-title { color: #c62828; border-bottom: 2px solid #c62828; padding-bottom: 4px; margin-top: 20px; }
-    .sec-slip-title { color: #0288d1; border-bottom: 2px solid #0288d1; padding-bottom: 4px; margin-top: 20px; }
-    
-    .slip-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
-    .slip-grid div { background: #f9f9f9; padding: 8px; border-radius: 6px; border: 1px dashed #ccc; }
-    .slip-grid label { font-size: 12px; }
-    .slip-grid input { margin-bottom: 0; }
-    
-    .slip-btn { background: #0288d1; color: white; padding: 4px 8px; text-decoration: none; border-radius: 4px; font-weight: bold; display: inline-block; font-size: 10px; }
+    .form-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 15px; margin-bottom: 20px; }
+    .form-group { margin-bottom: 10px; }
+    .form-group label { display: block; font-weight: bold; margin-bottom: 5px; font-size: 14px; }
+    .form-group input, .form-group select { width: 100%; padding: 8px; border: 1px solid #ccc; border-radius: 4px; }
+
+    .table-container { overflow-x: auto; margin-top: 15px; }
+    table { width: 100%; border-collapse: collapse; font-size: 13px; text-align: center; }
+    table, th, td { border: 1px solid #ccc; }
+    th { background: #37474f; color: white; padding: 8px; }
+    td { padding: 6px; }
+    tr:nth-child(even) { background: #f9f9f9; }
+
+    .slip-btn { background: #0288d1; color: white; padding: 4px 8px; text-decoration: none; border-radius: 3px; font-size: 12px; }
     .slip-btn:hover { background: #01579b; }
-    .req-star { color: red; font-weight: bold; }
-    .ocr-loader { font-size: 12px; color: #0288d1; font-weight: bold; margin-top: 5px; display: none; }
+
+    #ocrStatus { background: #fff3e0; padding: 8px; border-radius: 4px; color: #e65100; margin-bottom: 10px; display: none; font-size: 13px; }
+    .search-box { width: 100%; max-width: 400px; padding: 8px; margin-bottom: 15px; border: 1px solid #ccc; border-radius: 4px; }
   </style>
 </head>
 <body>
 
-  <!-- LOGIN SCREEN -->
-  <div id="loginScreen" class="card">
-    <h2>Accounts App Login</h2>
-    <label>User Role:</label>
-    <select id="roleSelect">
-      <option value="DSO">DSO</option>
-      <option value="Admin">Admin</option>
-    </select>
-    
-    <label>User ID / Name:</label>
-    <input type="text" id="userIdInput" placeholder="DSO ID (801-845) / Admin Name">
-    
-    <label>Password:</label>
-    <input type="password" id="passwordInput" placeholder="Enter Password">
-    
-    <button onclick="login()">Login</button>
+  <!-- LOGIN SECTION -->
+  <div id="loginSection" class="login-box">
+    <h2>Login Portal</h2>
+    <input type="text" id="loginId" placeholder="User ID / DSO ID (e.g. 801, admin)">
+    <input type="password" id="loginPass" placeholder="Password">
+    <button class="btn" onclick="handleLogin()">Login</button>
   </div>
 
-  <!-- DSO ENTRY SCREEN -->
-  <div id="dsoScreen" class="card hidden">
-    <div class="header-flex">
-      <h3 style="margin:0;">DSO Entry (ID: <span id="userDisplay"></span>)</h3>
-      <button class="btn-logout" onclick="logout()">Logout</button>
+  <!-- APP MAIN CONTAINER -->
+  <div id="appContainer" class="container" style="display: none;">
+    <div class="header-bar">
+      <h2 id="portalTitle">Collection Portal</h2>
+      <button class="btn btn-logout" onclick="logout()">Logout</button>
     </div>
-    
-    <h4 class="sec-rec-title">Received Section</h4>
-    <label>e-Money Received:</label>
-    <input type="number" id="emReceived" oninput="calcDsoSum()" placeholder="0">
-    <label>Cash Received:</label>
-    <input type="number" id="cashReceived" oninput="calcDsoSum()" placeholder="0">
-    <label>DSO Received:</label>
-    <input type="number" id="dsoReceived" oninput="calcDsoSum()" placeholder="0">
-    <label>Bank Received Amount:</label>
-    <input type="number" id="bankReceived" oninput="calcDsoSum(); checkBankRequirement();" placeholder="0">
 
-    <h4 class="sec-ret-title">Deposit & Return Section</h4>
-    <label>e-Money Return:</label>
-    <input type="number" id="emReturn" oninput="calcDsoSum()" placeholder="0">
-    
-    <label>Bank Deposit:</label>
-    <input type="number" id="bankDeposit" oninput="checkBankRequirement()" placeholder="0">
-    
-    <label>Deposit Bank Name: <span class="req-star" id="bankReqMark" style="display:none;">* (আবশ্যক)</span></label>
-    <input type="text" id="bankName" placeholder="e.g. DBBL / City Bank">
-    
-    <label>DSO Transfer:</label>
-    <input type="number" id="dsoTransfer" placeholder="0">
-    <label>Cash Deposit:</label>
-    <input type="number" id="cashDeposit" placeholder="0">
+    <!-- ADMIN VIEW -->
+    <div id="adminView" style="display: none;">
+      <div class="summary-cards">
+        <div class="card"><h3>মোট এন্ট্রি</h3><p id="totalEntriesCount">0</p></div>
+        <div class="card green"><h3>মোট রিসিভড (All DSO)</h3><p>৳ <span id="totalReceivedAllSum">0</span></p></div>
+        <div class="card red"><h3>মোট রিটার্ন (All DSO)</h3><p>৳ <span id="totalReturnAllSum">0</span></p></div>
+        <div class="card"><h3>মোট ব্যাংক ডিপোজিট</h3><p>৳ <span id="totalBankDepSum">0</span></p></div>
+      </div>
 
-    <!-- Bank Deposit Slips Upload Section -->
-    <h4 class="sec-slip-title">Bank Deposit Slips (Photo Upload)</h4>
-    <div class="slip-grid">
-      <div>
-        <label>Deposit Slip 1: <span class="req-star" id="slipReqMark" style="display:none;">* (আবশ্যক)</span></label>
-        <input type="file" id="slip1" accept="image/*" onchange="processSlipImage(this)">
-      </div>
-      <div>
-        <label>Deposit Slip 2:</label>
-        <input type="file" id="slip2" accept="image/*" onchange="processSlipImage(this)">
-      </div>
-      <div>
-        <label>Deposit Slip 3:</label>
-        <input type="file" id="slip3" accept="image/*" onchange="processSlipImage(this)">
-      </div>
-      <div>
-        <label>Deposit Slip 4:</label>
-        <input type="file" id="slip4" accept="image/*" onchange="processSlipImage(this)">
-      </div>
-    </div>
-    <div id="ocrStatus" class="ocr-loader">🔍 স্লিপের ছবি থেকে ব্যাংকের নাম স্ক্যান করা হচ্ছে...</div>
+      <input type="text" id="searchInput" class="search-box" placeholder="ID/তারিখ দিয়ে খুঁজুন (যেমন: 801 বা 2026-08)" onkeyup="filterAdminTable()">
+      <button class="btn" style="width: auto; margin-left: 10px;" onclick="loadData()">ডাটা রিফ্রেশ</button>
 
-    <!-- DSO Live Summary Box -->
-    <div class="summary-box" style="margin-top: 15px;">
-      <div class="sub-sum-box">
-        <h4>Total Received</h4>
-        <p>৳ <span id="dsoTotalReceivedDisplay">0</span></p>
-      </div>
-      <div class="sub-sum-box" style="background: #ffebee; border-color: #ffcdd2;">
-        <h4 style="color: #c62828;">Total Return</h4>
-        <p style="color: #b71c1c;">৳ <span id="dsoTotalReturnDisplay">0</span></p>
+      <div class="table-container">
+        <table id="dataTable">
+          <thead>
+            <tr>
+              <th>Date</th><th>Month</th><th>DSO ID</th>
+              <th>e-Mon Rec</th><th>Cash Rec</th><th>DSO Rec</th><th>Bank Rec</th>
+              <th>e-Mon Ret</th><th>Bank Dep</th><th>Bank Name</th><th>DSO Trans</th><th>Cash Dep</th>
+              <th>Calculated Cash</th>
+              <th>Slip 1</th><th>Slip 2</th><th>Slip 3</th><th>Slip 4</th>
+            </tr>
+          </thead>
+          <tbody></tbody>
+        </table>
       </div>
     </div>
 
-    <hr style="border: 0.5px solid #eee; margin: 15px 0;">
-
-    <h4>Cash Denomination Calculator</h4>
-    <div class="denom-row"><label>৳ 1000:</label><input type="number" class="note" data-value="1000" oninput="calcCash()" placeholder="0"></div>
-    <div class="denom-row"><label>৳ 500:</label><input type="number" class="note" data-value="500" oninput="calcCash()" placeholder="0"></div>
-    <div class="denom-row"><label>৳ 200:</label><input type="number" class="note" data-value="200" oninput="calcCash()" placeholder="0"></div>
-    <div class="denom-row"><label>৳ 100:</label><input type="number" class="note" data-value="100" oninput="calcCash()" placeholder="0"></div>
-    <div class="denom-row"><label>৳ 50:</label><input type="number" class="note" data-value="50" oninput="calcCash()" placeholder="0"></div>
-    
-    <div class="total-box">
-      <h3>Calculated Cash: ৳ <span id="totalCashDisplay">0</span></h3>
-    </div>
-
-    <button onclick="submitData()" id="subBtn">Submit Data</button>
-
-    <!-- DSO MY HISTORY SECTION -->
-    <hr style="border: 1px dashed #00796b; margin: 25px 0 15px 0;">
-    <button onclick="loadDsoHistory()" style="background:#0288d1;">📋 আমার আজকের/সকল হিসাব দেখুন (My History)</button>
-    
-    <div id="dsoHistoryBox" class="hidden" style="margin-top:15px; overflow-x:auto;">
-      <h4>My Submission History</h4>
-      <table id="dsoHistoryTable">
-        <thead>
-          <tr>
-            <th class="th-base">Date</th>
-            <th class="th-rec">Total Rec</th>
-            <th class="th-ret">Bank Dep</th>
-            <th class="th-ret">Bank Name</th>
-            <th class="th-cash">Cash</th>
-            <th class="th-slip">Slip 1</th>
-          </tr>
-        </thead>
-        <tbody></tbody>
-      </table>
-    </div>
-  </div>
-
-  <!-- ADMIN DASHBOARD -->
-  <div id="adminScreen" class="card hidden" style="max-width: 98%; width: 100%;">
-    <div class="header-flex">
-      <h3 style="margin:0;">Admin Control Dashboard</h3>
-      <button class="btn-logout" onclick="logout()">Logout</button>
-    </div>
-
-    <div class="dashboard-cards">
-      <div class="dash-card">
-        <h4>মোট এন্ট্রি</h4>
-        <p id="totalEntriesCount">0</p>
+    <!-- DSO VIEW -->
+    <div id="dsoView" style="display: none;">
+      <div id="ocrStatus"></div>
+      
+      <div class="form-grid">
+        <div>
+          <div class="form-group"><label>e-Money Received</label><input type="number" id="emReceived" value="0"></div>
+          <div class="form-group"><label>Cash Received</label><input type="number" id="cashReceived" value="0"></div>
+          <div class="form-group"><label>DSO Received</label><input type="number" id="dsoReceived" value="0"></div>
+          <div class="form-group"><label>Bank Received</label><input type="number" id="bankReceived" value="0"></div>
+        </div>
+        <div>
+          <div class="form-group"><label>e-Money Return</label><input type="number" id="emReturn" value="0"></div>
+          <div class="form-group"><label>Bank Deposit Amount</label><input type="number" id="bankDeposit" value="0"></div>
+          <div class="form-group"><label>Bank Name (কমা দিয়ে একাধিক)</label><input type="text" id="bankName" placeholder="e.g. Pubali Bank, DBBL"></div>
+          <div class="form-group"><label>DSO Transfer</label><input type="number" id="dsoTransfer" value="0"></div>
+          <div class="form-group"><label>Cash Deposit</label><input type="number" id="cashDeposit" value="0"></div>
+        </div>
+        <div>
+          <h4>নোট এর হিসাব (Denomination)</h4>
+          <div class="form-group"><label>৳ 1000 ×</label><input type="number" class="denom" data-value="1000" value="0" oninput="calcCash()"></div>
+          <div class="form-group"><label>৳ 500 ×</label><input type="number" class="denom" data-value="500" value="0" oninput="calcCash()"></div>
+          <div class="form-group"><label>৳ 200 ×</label><input type="number" class="denom" data-value="200" value="0" oninput="calcCash()"></div>
+          <div class="form-group"><label>৳ 100 ×</label><input type="number" class="denom" data-value="100" value="0" oninput="calcCash()"></div>
+          <div class="form-group"><label>৳ 50 ×</label><input type="number" class="denom" data-value="50" value="0" oninput="calcCash()"></div>
+          <p><strong>Total Calculated Cash: ৳ <span id="totalCashDisplay">0</span></strong></p>
+        </div>
       </div>
-      <div class="dash-card" style="background: #e8f5e9; border-color: #a5d6a7;">
-        <h4 style="color: #1b5e20;">মোট রিসিভড (All DSO)</h4>
-        <p style="color: #2e7d32;">৳ <span id="totalReceivedAllSum">0</span></p>
-      </div>
-      <div class="dash-card" style="background: #ffebee; border-color: #ffcdd2;">
-        <h4 style="color: #c62828;">মোট রিটার্ন (All DSO)</h4>
-        <p style="color: #b71c1c;">৳ <span id="totalReturnAllSum">0</span></p>
-      </div>
-      <div class="dash-card">
-        <h4>মোট ব্যাংক ডিপোজিট</h4>
-        <p>৳ <span id="totalBankDepSum">0</span></p>
-      </div>
-    </div>
-    
-    <div class="filter-box">
-      <input type="text" id="searchInput" onkeyup="filterAdminData()" placeholder="ID/তারিখ দিয়ে খুজুন (যেমন: 801 বা 2026-08)" style="flex:2;">
-      <button onclick="loadAdminData()" style="flex:1; margin:0;">ডাটা রিফ্রেশ</button>
-    </div>
 
-    <div id="loadingText" style="display:none; text-align:center; padding: 10px; color: #00796b; font-weight: bold;">গুগল শিট থেকে তথ্য লোড হচ্ছে...</div>
+      <h4>ডিপোজিট স্লিপ আপলোড (Max 4 Slips)</h4>
+      <div class="form-grid">
+        <div class="form-group"><label>Deposit Slip 1 (Required if Bank Dep > 0)</label><input type="file" id="slip1" accept="image/*" onchange="processSlipImage(this)"></div>
+        <div class="form-group"><label>Deposit Slip 2</label><input type="file" id="slip2" accept="image/*" onchange="processSlipImage(this)"></div>
+        <div class="form-group"><label>Deposit Slip 3</label><input type="file" id="slip3" accept="image/*" onchange="processSlipImage(this)"></div>
+        <div class="form-group"><label>Deposit Slip 4</label><input type="file" id="slip4" accept="image/*" onchange="processSlipImage(this)"></div>
+      </div>
 
-    <div style="overflow-x:auto;">
-      <table id="dataTable">
-        <thead>
-          <tr>
-            <th class="th-base">Date</th>
-            <th class="th-base">Month</th>
-            <th class="th-base">DSO ID</th>
-            
-            <th class="th-rec">e-Mon Rec</th>
-            <th class="th-rec">Cash Rec</th>
-            <th class="th-rec">DSO Rec</th>
-            <th class="th-rec">Bank Rec</th>
-            
-            <th class="th-ret">e-Mon Ret</th>
-            <th class="th-ret">Bank Dep</th>
-            <th class="th-ret">Bank Name</th>
-            <th class="th-ret">DSO Trans</th>
-            <th class="th-ret">Cash Dep</th>
-            
-            <th class="th-cash">Calculated Cash</th>
+      <button class="btn" id="subBtn" onclick="submitData()">Submit Data</button>
 
-            <th class="th-slip">Slip 1</th>
-            <th class="th-slip">Slip 2</th>
-            <th class="th-slip">Slip 3</th>
-            <th class="th-slip">Slip 4</th>
-          </tr>
-        </thead>
-        <tbody></tbody>
-      </table>
+      <h3 style="margin-top: 30px;">আমার পূর্বের জমা হিসাব (My History)</h3>
+      <div class="table-container">
+        <table id="dsoHistoryTable">
+          <thead>
+            <tr>
+              <th>তারিখ</th><th>মোট রিসিভড</th><th>ব্যাংক ডিপোজিট</th><th>ব্যাংকের নাম</th><th>ক্যাশ হিসাব</th><th>ডিপোজিট স্লিপ</th>
+            </tr>
+          </thead>
+          <tbody></tbody>
+        </table>
+      </div>
     </div>
   </div>
 
   <script>
-    const GOOGLE_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbySQJnbl6DnF_Su0w36vCixcM5yg60j-ZGt-K_VPBSKVap1HT6AS5V9ydZfTYJgGuiEBA/exec"; 
-    let currentUser = "";
-    let allAdminRecords = [];
+    const GOOGLE_SCRIPT_URL = "YOUR_GOOGLE_APPS_SCRIPT_URL_HERE"; // এখানে আপনার Apps Script Web App URL দিন
 
     const KNOWN_BANKS = [
-      { name: "Dutch-Bangla Bank / DBBL", keywords: ["dutch", "bangla", "dbbl"] },
       { name: "Islami Bank Bangladesh", keywords: ["islami", "ibbl"] },
-      { name: "City Bank", keywords: ["city bank", "citybank"] },
-      { name: "BRAC Bank", keywords: ["brac"] },
-      { name: "Eastern Bank (EBL)", keywords: ["eastern", "ebl"] },
-      { name: "Sonali Bank", keywords: ["sonali"] },
-      { name: "Janata Bank", keywords: ["janata"] },
-      { name: "Agrani Bank", keywords: ["agrani"] },
       { name: "Pubali Bank", keywords: ["pubali"] },
-      { name: "United Commercial Bank (UCB)", keywords: ["united commercial", "ucb"] },
-      { name: "Prime Bank", keywords: ["prime"] },
-      { name: "Mercantile Bank", keywords: ["mercantile"] },
-      { name: "Southeast Bank", keywords: ["southeast"] },
-      { name: "Mutual Trust Bank (MTB)", keywords: ["mutual trust", "mtb"] },
-      { name: "Bank Asia", keywords: ["bank asia"] }
+      { name: "Dutch-Bangla Bank", keywords: ["dutch", "dbbl", "rocket"] },
+      { name: "BRAC Bank", keywords: ["brac"] },
+      { name: "City Bank", keywords: ["city"] }
     ];
 
-    function login() {
-      const role = document.getElementById("roleSelect").value;
-      const uid = document.getElementById("userIdInput").value.trim();
-      const pass = document.getElementById("passwordInput").value.trim();
+    let currentUser = null;
+    let rawSheetData = [];
 
-      if (role === "Admin") {
-        if (pass === "#@800") {
-          showScreen("adminScreen");
-          loadAdminData();
-        } else { alert("ভুল অ্যাডমিন পাসওয়ার্ড!"); }
+    function handleLogin() {
+      const id = document.getElementById("loginId").value.trim();
+      if (!id) { alert("ইউজার আইডি লিখুন!"); return; }
+
+      currentUser = id;
+      document.getElementById("loginSection").style.display = "none";
+      document.getElementById("appContainer").style.display = "block";
+
+      if (id.toLowerCase() === "admin") {
+        document.getElementById("portalTitle").innerText = "Admin Control Dashboard";
+        document.getElementById("adminView").style.display = "block";
+        document.getElementById("dsoView").style.display = "none";
+        loadData();
       } else {
-        let idNum = parseInt(uid);
-        if (idNum >= 801 && idNum <= 845) {
-          if (pass === "1234") {
-            currentUser = uid;
-            document.getElementById("userDisplay").innerText = uid;
-            showScreen("dsoScreen");
-          } else { alert("ভুল পাসওয়ার্ড! (ডিফল্ট: 1234)"); }
-        } else { alert("DSO ID অবশ্যই ৮০১ থেকে ৮৪৫ এর মধ্যে হতে হবে।"); }
+        document.getElementById("portalTitle").innerText = "DSO Entry Panel (ID: " + id + ")";
+        document.getElementById("dsoView").style.display = "block";
+        document.getElementById("adminView").style.display = "none";
+        loadData();
       }
     }
 
     function logout() {
-      currentUser = "";
-      document.getElementById("userIdInput").value = "";
-      document.getElementById("passwordInput").value = "";
-      showScreen("loginScreen");
-    }
-
-    function showScreen(id) {
-      document.getElementById("loginScreen").classList.add("hidden");
-      document.getElementById("dsoScreen").classList.add("hidden");
-      document.getElementById("adminScreen").classList.add("hidden");
-      document.getElementById(id).classList.remove("hidden");
-    }
-
-    function calcDsoSum() {
-      let emRec = parseFloat(document.getElementById("emReceived").value) || 0;
-      let cashRec = parseFloat(document.getElementById("cashReceived").value) || 0;
-      let dsoRec = parseFloat(document.getElementById("dsoReceived").value) || 0;
-      let bankRec = parseFloat(document.getElementById("bankReceived").value) || 0;
-
-      let totalReceived = emRec + cashRec + dsoRec + bankRec;
-      document.getElementById("dsoTotalReceivedDisplay").innerText = totalReceived;
-
-      let emRet = parseFloat(document.getElementById("emReturn").value) || 0;
-      document.getElementById("dsoTotalReturnDisplay").innerText = emRet;
+      location.reload();
     }
 
     function calcCash() {
       let total = 0;
-      document.querySelectorAll(".note").forEach(input => {
-        let val = parseInt(input.getAttribute("data-value"));
-        let count = parseInt(input.value) || 0;
-        total += val * count;
+      document.querySelectorAll(".denom").forEach(input => {
+        let val = parseFloat(input.value) || 0;
+        let note = parseFloat(input.getAttribute("data-value"));
+        total += val * note;
       });
       document.getElementById("totalCashDisplay").innerText = total;
     }
 
-    function checkBankRequirement() {
-      let depVal = parseFloat(document.getElementById("bankDeposit").value) || 0;
-      let recVal = parseFloat(document.getElementById("bankReceived").value) || 0;
+    function formatDate(dateVal) {
+      if (!dateVal) return '';
+      let str = String(dateVal);
+      if (str.includes('T')) return str.split('T')[0];
+      return str;
+    }
 
-      if (depVal > 0 || recVal > 0) {
-        document.getElementById("bankReqMark").style.display = "inline";
-        document.getElementById("slipReqMark").style.display = "inline";
-      } else {
-        document.getElementById("bankReqMark").style.display = "none";
-        document.getElementById("slipReqMark").style.display = "none";
-      }
+    function getBase64(file) {
+      return new Promise((resolve) => {
+        if (!file) { resolve(""); return; }
+        const reader = new FileReader();
+        reader.readAsDataURL(file);
+        reader.onload = (event) => {
+          const img = new Image();
+          img.src = event.target.result;
+          img.onload = () => {
+            const canvas = document.createElement("canvas");
+            let width = img.width;
+            let height = img.height;
+            const max_size = 1000;
+            if (width > height) {
+              if (width > max_size) { height *= max_size / width; width = max_size; }
+            } else {
+              if (height > max_size) { width *= max_size / height; height = max_size; }
+            }
+            canvas.width = width;
+            canvas.height = height;
+            const ctx = canvas.getContext("2d");
+            ctx.drawImage(img, 0, 0, width, height);
+            resolve(canvas.toDataURL("image/jpeg", 0.7));
+          };
+        };
+        reader.onerror = () => resolve("");
+      });
     }
 
     async function processSlipImage(input) {
       if (!input.files || !input.files[0]) return;
-      
       const statusDiv = document.getElementById("ocrStatus");
       statusDiv.style.display = "block";
-      statusDiv.innerText = "🔍 স্লিপের ছবি থেকে ব্যাংকের নাম স্ক্যান করা হচ্ছে...";
+      statusDiv.innerText = "🔍 স্লিপের ছবি স্ক্যান করা হচ্ছে...";
 
       try {
         const file = input.files[0];
@@ -359,34 +243,26 @@
         let detectedBank = "";
         for (let b of KNOWN_BANKS) {
           for (let kw of b.keywords) {
-            if (text.includes(kw)) {
-              detectedBank = b.name;
-              break;
-            }
+            if (text.includes(kw)) { detectedBank = b.name; break; }
           }
           if (detectedBank) break;
         }
 
         const bankInput = document.getElementById("bankName");
         if (detectedBank) {
-          bankInput.value = detectedBank;
-          statusDiv.innerText = "✅ ব্যাংকের নাম অটো-ডিটেক্ট হয়েছে: " + detectedBank;
+          let currentVal = bankInput.value.trim();
+          if (currentVal) {
+            if (!currentVal.includes(detectedBank)) bankInput.value = currentVal + ", " + detectedBank;
+          } else {
+            bankInput.value = detectedBank;
+          }
+          statusDiv.innerText = "✅ নতুন ব্যাংক সনাক্ত হয়েছে: " + detectedBank;
         } else {
-          statusDiv.innerText = "ℹ️ ব্যাংকের নাম নিশ্চিত হওয়া যায়নি, অনুগ্রহ করে নিজে টাইপ করুন।";
+          statusDiv.innerText = "ℹ️ ব্যাংকের নাম ম্যানুয়ালি টাইপ করুন।";
         }
       } catch (err) {
-        statusDiv.innerText = "ℹ️ ব্যাংকের নাম রিড করা যায়নি, নিজে টাইপ করুন।";
+        statusDiv.innerText = "ℹ️ ব্যাংকের নাম রিড করা যায়নি।";
       }
-    }
-
-    function getBase64(file) {
-      return new Promise((resolve, reject) => {
-        if (!file) { resolve(""); return; }
-        const reader = new FileReader();
-        reader.readAsDataURL(file);
-        reader.onload = () => resolve(reader.result);
-        reader.onerror = error => reject(error);
-      });
     }
 
     async function submitData() {
@@ -397,12 +273,12 @@
 
       if (bankDepositVal > 0 || bankReceivedVal > 0) {
         if (!bankNameVal) {
-          alert("Error: ব্যাংকে লেনদেন বা ডিপোজিট থাকলে অবশ্যই Bank Name দিতে হবে!");
+          alert("Error: ব্যাংকে টাকা বা ডিপোজিট থাকলে Bank Name দিতে হবে!");
           document.getElementById("bankName").focus();
           return;
         }
         if (!file1) {
-          alert("Error: ব্যাংকে টাকা দিয়ে থাকলে অবশ্যই Deposit Slip 1 আপলোড করতে হবে!");
+          alert("Error: ব্যাংকে টাকা দিয়ে থাকলে Deposit Slip 1 আপলোড করতে হবে!");
           document.getElementById("slip1").focus();
           return;
         }
@@ -442,10 +318,7 @@
         n100: document.querySelector('[data-value="100"]').value || 0,
         n50: document.querySelector('[data-value="50"]').value || 0,
         totalCash: document.getElementById("totalCashDisplay").innerText,
-        slip1: slip1Base64,
-        slip2: slip2Base64,
-        slip3: slip3Base64,
-        slip4: slip4Base64
+        slip1: slip1Base64, slip2: slip2Base64, slip3: slip3Base64, slip4: slip4Base64
       };
 
       fetch(GOOGLE_SCRIPT_URL, {
@@ -463,110 +336,48 @@
       });
     }
 
-    function loadDsoHistory() {
-      document.getElementById("dsoHistoryBox").classList.remove("hidden");
-      const script = document.createElement('script');
-      script.src = GOOGLE_SCRIPT_URL + "?callback=renderDsoHistory";
-      document.body.appendChild(script);
-    }
-
-    function renderDsoHistory(data) {
-      let tbody = document.querySelector("#dsoHistoryTable tbody");
-      tbody.innerHTML = "";
-      
-      let count = 0;
-      if (data && data.length > 1) {
-        for (let i = 1; i < data.length; i++) {
-          let r = data[i];
-          if (String(r[2]) === String(currentUser)) {
-            count++;
-            let emRec = parseFloat(r[3]) || 0;
-            let cashRec = parseFloat(r[4]) || 0;
-            let dsoRec = parseFloat(r[5]) || 0;
-            let bankRec = parseFloat(r[6]) || 0;
-            let totalRec = emRec + cashRec + dsoRec + bankRec;
-
-            let slipLink = (r[18] && String(r[18]).startsWith('http')) ? `<a class="slip-btn" href="${r[18]}" target="_blank">View</a>` : '-';
-
-            let row = `<tr>
-              <td>${r[0] || ''}</td>
-              <td style="color:#2e7d32; font-weight:bold;">৳ ${totalRec}</td>
-              <td style="color:#c62828;">৳ ${r[8] || 0}</td>
-              <td>${r[9] || '-'}</td>
-              <td>৳ ${r[17] || 0}</td>
-              <td>${slipLink}</td>
-            </tr>`;
-            tbody.innerHTML += row;
+    function loadData() {
+      fetch(GOOGLE_SCRIPT_URL)
+        .then(res => res.json())
+        .then(data => {
+          rawSheetData = data;
+          if (currentUser.toLowerCase() === "admin") {
+            updateSummaryCards(data);
+            renderAdminTable(data);
+          } else {
+            renderDsoHistory(data);
           }
-        }
-      }
-      if (count === 0) {
-        tbody.innerHTML = "<tr><td colspan='6'>আপনার কোনো পূর্বের এন্ট্রি পাওয়া যায়নি।</td></tr>";
-      }
-    }
-
-    function loadAdminData() {
-      document.getElementById("loadingText").style.display = "block";
-      const script = document.createElement('script');
-      script.src = GOOGLE_SCRIPT_URL + "?callback=handleScriptResponse";
-      document.body.appendChild(script);
-    }
-
-    function handleScriptResponse(data) {
-      document.getElementById("loadingText").style.display = "none";
-      allAdminRecords = data || [];
-      renderTable(allAdminRecords);
-      updateSummaryCards(allAdminRecords);
+        }).catch(err => console.error("Error loading data:", err));
     }
 
     function updateSummaryCards(data) {
-      if (!data || data.length <= 1) {
-        document.getElementById("totalEntriesCount").innerText = 0;
-        document.getElementById("totalReceivedAllSum").innerText = 0;
-        document.getElementById("totalReturnAllSum").innerText = 0;
-        document.getElementById("totalBankDepSum").innerText = 0;
-        return;
-      }
+      if (!data || data.length <= 1) return;
+      let rows = data.slice(1).filter(r => r[0] || r[2]);
+      
+      let totalReceivedAll = 0, totalReturnAll = 0, totalBankDep = 0;
+      rows.forEach(r => {
+        totalReceivedAll += ((parseFloat(r[3])||0) + (parseFloat(r[4])||0) + (parseFloat(r[5])||0) + (parseFloat(r[6])||0));
+        totalReturnAll += parseFloat(r[7]) || 0;
+        totalBankDep += parseFloat(r[8]) || 0;
+      });
 
-      let totalRecCount = data.length - 1;
-      let totalReceivedAll = 0;
-      let totalReturnAll = 0;
-      let totalBankDep = 0;
-
-      for (let i = 1; i < data.length; i++) {
-        let emRec = parseFloat(data[i][3]) || 0;
-        let cashRec = parseFloat(data[i][4]) || 0;
-        let dsoRec = parseFloat(data[i][5]) || 0;
-        let bankRec = parseFloat(data[i][6]) || 0;
-
-        totalReceivedAll += (emRec + cashRec + dsoRec + bankRec);
-        totalReturnAll += parseFloat(data[i][7]) || 0;
-        totalBankDep += parseFloat(data[i][8]) || 0;
-      }
-
-      document.getElementById("totalEntriesCount").innerText = totalRecCount;
+      document.getElementById("totalEntriesCount").innerText = rows.length;
       document.getElementById("totalReceivedAllSum").innerText = totalReceivedAll;
       document.getElementById("totalReturnAllSum").innerText = totalReturnAll;
       document.getElementById("totalBankDepSum").innerText = totalBankDep;
     }
 
-    function renderTable(data) {
+    function renderAdminTable(data) {
       let tbody = document.querySelector("#dataTable tbody");
       tbody.innerHTML = "";
+      if (!data || data.length <= 1) return;
 
-      if (!data || data.length <= 1) {
-        tbody.innerHTML = "<tr><td colspan='17'>কোনো ডাটা পাওয়া যায়নি!</td></tr>";
-        return;
-      }
-
-      for (let i = 1; i < data.length; i++) {
-        let r = data[i];
-        
+      let rows = data.slice(1).filter(r => r[0] || r[2]);
+      rows.forEach(r => {
         let makeLink = (url, label) => (url && String(url).startsWith('http')) ? `<a class="slip-btn" href="${url}" target="_blank">${label}</a>` : '-';
-
         let row = `<tr>
-          <td>${r[0] || ''}</td>
-          <td>${r[1] || ''}</td>
+          <td>${formatDate(r[0])}</td>
+          <td>${formatDate(r[1])}</td>
           <td><b>${r[2] || ''}</b></td>
           <td style="background:#f1f8e9;">${r[3] || 0}</td>
           <td style="background:#f1f8e9;">${r[4] || 0}</td>
@@ -574,7 +385,7 @@
           <td style="background:#f1f8e9;">${r[6] || 0}</td>
           <td style="background:#ffebee;">${r[7] || 0}</td>
           <td style="background:#ffebee;">${r[8] || 0}</td>
-          <td style="background:#ffebee; font-weight:bold; color:#00796b;">${r[9] || ''}</td>
+          <td style="background:#ffebee; font-weight:bold; color:#00796b;">${r[9] || '-'}</td>
           <td style="background:#ffebee;">${r[10] || 0}</td>
           <td style="background:#ffebee;">${r[11] || 0}</td>
           <td style="background:#e0f2f1;"><b>৳ ${r[17] || 0}</b></td>
@@ -584,17 +395,46 @@
           <td>${makeLink(r[21], 'View 4')}</td>
         </tr>`;
         tbody.innerHTML += row;
-      }
+      });
     }
 
-    function filterAdminData() {
-      let q = document.getElementById("searchInput").value.toLowerCase();
-      let filtered = allAdminRecords.filter((row, index) => {
-        if (index === 0) return true;
-        return row.some(cell => String(cell).toLowerCase().includes(q));
+    function renderDsoHistory(data) {
+      let tbody = document.querySelector("#dsoHistoryTable tbody");
+      tbody.innerHTML = "";
+      if (!data || data.length <= 1) return;
+
+      let rows = data.slice(1).filter(r => String(r[2]) === String(currentUser));
+      if (rows.length === 0) {
+        tbody.innerHTML = "<tr><td colspan='6'>আপনার কোনো এন্ট্রি পাওয়া যায়নি।</td></tr>";
+        return;
+      }
+
+      rows.forEach(r => {
+        let slips = [];
+        if (r[18] && String(r[18]).startsWith('http')) slips.push(`<a class="slip-btn" href="${r[18]}" target="_blank">Slip 1</a>`);
+        if (r[19] && String(r[19]).startsWith('http')) slips.push(`<a class="slip-btn" href="${r[19]}" target="_blank">Slip 2</a>`);
+        if (r[20] && String(r[20]).startsWith('http')) slips.push(`<a class="slip-btn" href="${r[20]}" target="_blank">Slip 3</a>`);
+        if (r[21] && String(r[21]).startsWith('http')) slips.push(`<a class="slip-btn" href="${r[21]}" target="_blank">Slip 4</a>`);
+
+        let row = `<tr>
+          <td>${formatDate(r[0])}</td>
+          <td style="color:#2e7d32; font-weight:bold;">৳ ${(parseFloat(r[3])||0)+(parseFloat(r[4])||0)+(parseFloat(r[5])||0)+(parseFloat(r[6])||0)}</td>
+          <td style="color:#c62828;">৳ ${r[8] || 0}</td>
+          <td style="font-weight:bold; color:#00796b;">${r[9] || '-'}</td>
+          <td>৳ ${r[17] || 0}</td>
+          <td>${slips.length > 0 ? slips.join(' ') : '-'}</td>
+        </tr>`;
+        tbody.innerHTML += row;
       });
-      renderTable(filtered);
-      updateSummaryCards(filtered);
+    }
+
+    function filterAdminTable() {
+      let q = document.getElementById("searchInput").value.toLowerCase();
+      let rows = document.querySelectorAll("#dataTable tbody tr");
+      rows.forEach(row => {
+        let text = row.innerText.toLowerCase();
+        row.style.display = text.includes(q) ? "" : "none";
+      });
     }
   </script>
 </body>
