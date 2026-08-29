@@ -4,6 +4,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Accounts Management App</title>
+  <script src="https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js"></script>
   <style>
     body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background: #eef2f3; margin: 0; padding: 15px; }
     .card { background: #fff; padding: 20px; border-radius: 12px; box-shadow: 0 4px 10px rgba(0,0,0,0.08); max-width: 650px; margin: 0 auto 20px auto; }
@@ -56,11 +57,12 @@
     .slip-link { color: #0288d1; font-weight: bold; text-decoration: none; }
     .slip-link:hover { text-decoration: underline; }
     .req-star { color: red; }
+
+    .ocr-loader { font-size: 12px; color: #0288d1; font-weight: bold; margin-top: 4px; display: none; }
   </style>
 </head>
 <body>
 
-  <!-- LOGIN SCREEN -->
   <div id="loginScreen" class="card">
     <h2>Accounts App Login</h2>
     <label>User Role:</label>
@@ -78,7 +80,6 @@
     <button onclick="login()">Login</button>
   </div>
 
-  <!-- DSO ENTRY SCREEN -->
   <div id="dsoScreen" class="card hidden">
     <div class="header-flex">
       <h3 style="margin:0;">DSO Entry (ID: <span id="userDisplay"></span>)</h3>
@@ -102,36 +103,35 @@
     <label>Bank Deposit:</label>
     <input type="number" id="bankDeposit" placeholder="0">
     
-    <label>Deposit Bank Name: <span class="req-star" id="bankReqMark" style="display:none;">* (আবশ্যক)</span></label>
-    <input type="text" id="bankName" placeholder="e.g. DBBL / City Bank">
+    <label>Deposit Bank Name: <span class="req-star" id="bankReqMark" style="display:none;">*</span></label>
+    <input type="text" id="bankName" placeholder="e.g. DBBL / City Bank (Auto Detected)">
     
     <label>DSO Transfer:</label>
     <input type="number" id="dsoTransfer" placeholder="0">
     <label>Cash Deposit:</label>
     <input type="number" id="cashDeposit" placeholder="0">
 
-    <!-- Bank Deposit Slips Upload Section -->
     <h4 class="sec-slip-title">Bank Deposit Slips (Photo Upload)</h4>
     <div class="slip-grid">
       <div>
         <label>Deposit Slip 1: <span class="req-star" id="slipReqMark" style="display:none;">*</span></label>
-        <input type="file" id="slip1" accept="image/*">
+        <input type="file" id="slip1" accept="image/*" onchange="processSlipImage(this)">
       </div>
       <div>
         <label>Deposit Slip 2:</label>
-        <input type="file" id="slip2" accept="image/*">
+        <input type="file" id="slip2" accept="image/*" onchange="processSlipImage(this)">
       </div>
       <div>
         <label>Deposit Slip 3:</label>
-        <input type="file" id="slip3" accept="image/*">
+        <input type="file" id="slip3" accept="image/*" onchange="processSlipImage(this)">
       </div>
       <div>
         <label>Deposit Slip 4:</label>
-        <input type="file" id="slip4" accept="image/*">
+        <input type="file" id="slip4" accept="image/*" onchange="processSlipImage(this)">
       </div>
     </div>
+    <div id="ocrStatus" class="ocr-loader">🔍 Scanning bank slip for Bank Name...</div>
 
-    <!-- DSO Live Summary Box -->
     <div class="summary-box" style="margin-top: 15px;">
       <div class="sub-sum-box">
         <h4>Total Received</h4>
@@ -159,14 +159,12 @@
     <button onclick="submitData()" id="subBtn">Submit Data</button>
   </div>
 
-  <!-- ADMIN DASHBOARD -->
   <div id="adminScreen" class="card hidden" style="max-width: 98%; width: 100%;">
     <div class="header-flex">
       <h3 style="margin:0;">Admin Control Dashboard</h3>
       <button class="btn-logout" onclick="logout()">Logout</button>
     </div>
 
-    <!-- Admin Dashboard Cards -->
     <div class="dashboard-cards">
       <div class="dash-card">
         <h4>মোট এন্ট্রি</h4>
@@ -230,6 +228,30 @@
     let currentUser = "";
     let allAdminRecords = [];
 
+    // পরিচিত ব্যাংকের তালিকা (OCR মেলানোর জন্য)
+    const KNOWN_BANKS = [
+      { name: "Dutch-Bangla Bank / DBBL", keywords: ["dutch", "bangla", "dbbl", "dutch-bangla"] },
+      { name: "Islami Bank Bangladesh", keywords: ["islami", "ibbl"] },
+      { name: "City Bank", keywords: ["city bank", "citybank", "the city bank"] },
+      { name: "BRAC Bank", keywords: ["brac", "brac bank"] },
+      { name: "Eastern Bank (EBL)", keywords: ["eastern", "ebl"] },
+      { name: "Sonali Bank", keywords: ["sonali"] },
+      { name: "Janata Bank", keywords: ["janata"] },
+      { name: "Agrani Bank", keywords: ["agrani"] },
+      { name: "Pubali Bank", keywords: ["pubali"] },
+      { name: "United Commercial Bank (UCB)", keywords: ["united commercial", "ucb", "ucbl"] },
+      { name: "Prime Bank", keywords: ["prime bank"] },
+      { name: "Mercantile Bank", keywords: ["mercantile"] },
+      { name: "National Bank", keywords: ["national bank"] },
+      { name: "Standard Bank", keywords: ["standard bank"] },
+      { name: "Dhaka Bank", keywords: ["dhaka bank"] },
+      { name: "First Security Islami Bank (FSIBL)", keywords: ["first security", "fsibl"] },
+      { name: "Social Islami Bank (SIBL)", keywords: ["social islami", "sibl"] },
+      { name: "Southeast Bank", keywords: ["southeast"] },
+      { name: "Mutual Trust Bank (MTB)", keywords: ["mutual trust", "mtb"] },
+      { name: "Bank Asia", keywords: ["bank asia"] }
+    ];
+
     function login() {
       const role = document.getElementById("roleSelect").value;
       const uid = document.getElementById("userIdInput").value.trim();
@@ -289,6 +311,43 @@
       document.getElementById("totalCashDisplay").innerText = total;
     }
 
+    // OCR: ছবি থেকে ব্যাংকের নাম রিড করার ফাংশন
+    async function processSlipImage(input) {
+      if (!input.files || !input.files[0]) return;
+      
+      const statusDiv = document.getElementById("ocrStatus");
+      statusDiv.style.display = "block";
+      statusDiv.innerText = "🔍 স্লিপ থেকে ব্যাংকের নাম স্ক্যান করা হচ্ছে...";
+
+      try {
+        const file = input.files[0];
+        const result = await Tesseract.recognize(file, 'eng');
+        const text = result.data.text.toLowerCase();
+
+        let detectedBank = "";
+        for (let b of KNOWN_BANKS) {
+          for (let kw of b.keywords) {
+            if (text.includes(kw)) {
+              detectedBank = b.name;
+              break;
+            }
+          }
+          if (detectedBank) break;
+        }
+
+        const bankInput = document.getElementById("bankName");
+        if (detectedBank) {
+          bankInput.value = detectedBank;
+          statusDiv.innerText = "✅ ব্যাংকের নাম অটো-ডিটেক্ট হয়েছে: " + detectedBank;
+        } else {
+          statusDiv.innerText = "ℹ️ ব্যাংকের নাম নিশ্চিত হওয়া যায়নি, অনুগ্রহ করে নিজে টাইপ করুন।";
+        }
+      } catch (err) {
+        console.error(err);
+        statusDiv.innerText = "ℹ️ ব্যাংকের নাম রিড করা যায়নি, নিজে টাইপ করুন।";
+      }
+    }
+
     function getBase64(file) {
       return new Promise((resolve, reject) => {
         if (!file) { resolve(""); return; }
@@ -304,7 +363,6 @@
       const bankNameVal = document.getElementById("bankName").value.trim();
       let file1 = document.getElementById("slip1").files[0];
 
-      // Validation Check: Bank Deposit থাকলে Bank Name এবং Slip 1 বাধ্যতামূলক
       if (bankDepositVal > 0) {
         if (!bankNameVal) {
           alert("Error: Bank Deposit দিয়ে থাকলে অবশ্যই Bank Name লিখতে হবে!");
@@ -312,7 +370,7 @@
           return;
         }
         if (!file1) {
-          alert("Error: Bank Deposit দিয়ে থাকলে কমপক্ষে ১টি Deposit Slip এর ছবি আপলোড করতে হবে!");
+          alert("Error: Bank Deposit দিয়ে থাকলে কমপক্ষে ১ম Deposit Slip টি আপলোড করতে হবে!");
           document.getElementById("slip1").focus();
           return;
         }
