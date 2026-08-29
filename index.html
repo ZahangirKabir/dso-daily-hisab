@@ -6,7 +6,7 @@
   <title>Accounts Management App</title>
   <style>
     body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background: #eef2f3; margin: 0; padding: 15px; }
-    .card { background: #fff; padding: 20px; border-radius: 12px; box-shadow: 0 4px 10px rgba(0,0,0,0.08); max-width: 500px; margin: 0 auto 20px auto; }
+    .card { background: #fff; padding: 20px; border-radius: 12px; box-shadow: 0 4px 10px rgba(0,0,0,0.08); max-width: 600px; margin: 0 auto 20px auto; }
     h2, h3, h4 { color: #00796b; margin-top: 0; }
     label { font-weight: bold; font-size: 14px; color: #333; }
     input, select, button { width: 100%; padding: 12px; margin: 8px 0 16px 0; border: 1px solid #ccc; border-radius: 6px; box-sizing: border-box; font-size: 14px; }
@@ -16,10 +16,12 @@
     .denom-row { display: flex; align-items: center; gap: 10px; margin-bottom: 5px; }
     .denom-row label { width: 80px; margin: 0; }
     .denom-row input { margin: 0; }
-    table { width: 100%; border-collapse: collapse; margin-top: 10px; font-size: 12px; }
-    th, td { border: 1px solid #ddd; padding: 8px; text-align: left; }
+    table { width: 100%; border-collapse: collapse; margin-top: 10px; font-size: 11px; }
+    th, td { border: 1px solid #ddd; padding: 8px; text-align: center; }
     th { background: #00796b; color: white; }
     .total-box { background: #e0f2f1; padding: 10px; border-radius: 6px; border: 1px solid #80cbc4; text-align: center; margin-bottom: 15px; }
+    .filter-box { display: flex; gap: 10px; margin-bottom: 10px; }
+    .filter-box input { margin: 0; }
   </style>
 </head>
 <body>
@@ -64,7 +66,7 @@
     <label>Bank Deposit:</label>
     <input type="number" id="bankDeposit" placeholder="0">
     <label>Deposit Bank Name:</label>
-    <input type="text" id="bankName" placeholder="e.g. Dutch Bangla Bank">
+    <input type="text" id="bankName" placeholder="e.g. DBBL">
     <label>DSO Transfer:</label>
     <input type="number" id="dsoTransfer" placeholder="0">
     <label>Cash Deposit:</label>
@@ -89,19 +91,33 @@
   </div>
 
   <!-- ADMIN DASHBOARD -->
-  <div id="adminScreen" class="card hidden" style="max-width: 800px;">
-    <h3>Admin Dashboard</h3>
-    <button onclick="loadAdminData()">Refresh Data</button>
+  <div id="adminScreen" class="card hidden" style="max-width: 90%; width: 100%;">
+    <h3>Admin Dashboard (সব ডাটা)</h3>
+    
+    <div class="filter-box">
+      <input type="text" id="searchInput" onkeyup="filterAdminData()" placeholder="ইউজার আইডি বা তারিখ দিয়ে ফিল্টার করুন...">
+      <button onclick="loadAdminData()" style="width: 150px; margin: 0;">রিফ্রেশ ডাটা</button>
+    </div>
+
+    <div id="loadingText" style="display:none; text-align:center; padding: 10px; color: #00796b; font-weight: bold;">গুগল শিট থেকে ডাটা লোড হচ্ছে...</div>
+
     <div style="overflow-x:auto;">
       <table id="dataTable">
         <thead>
           <tr>
             <th>Date</th>
-            <th>User ID</th>
+            <th>Month</th>
+            <th>DSO ID</th>
+            <th>e-Mon Rec</th>
             <th>Cash Rec</th>
+            <th>DSO Rec</th>
+            <th>Bank Rec</th>
+            <th>e-Mon Ret</th>
             <th>Bank Dep</th>
             <th>Bank Name</th>
-            <th>Total Cash</th>
+            <th>DSO Trans</th>
+            <th>Cash Dep</th>
+            <th>Calculated Cash</th>
           </tr>
         </thead>
         <tbody></tbody>
@@ -112,6 +128,7 @@
   <script>
     const GOOGLE_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbwqsTwqaZmoT0FzmDg_AjPnNwkRM_9JzIET_BYSRxC4ocrpFTJWht4wWcqDLOeSeeKnbw/exec"; 
     let currentUser = "";
+    let allAdminRecords = [];
 
     function login() {
       const role = document.getElementById("roleSelect").value;
@@ -198,23 +215,50 @@
     }
 
     function loadAdminData() {
+      document.getElementById("loadingText").style.display = "block";
       fetch(GOOGLE_SCRIPT_URL)
         .then(res => res.json())
         .then(data => {
-          let tbody = document.querySelector("#dataTable tbody");
-          tbody.innerHTML = "";
-          for (let i = 1; i < data.length; i++) {
-            let row = `<tr>
-              <td>${data[i][0]}</td>
-              <td>${data[i][2]}</td>
-              <td>${data[i][4]}</td>
-              <td>${data[i][8]}</td>
-              <td>${data[i][9]}</td>
-              <td>${data[i][19]}</td>
-            </tr>`;
-            tbody.innerHTML += row;
-          }
+          document.getElementById("loadingText").style.display = "none";
+          allAdminRecords = data;
+          renderTable(data);
+        }).catch(err => {
+          document.getElementById("loadingText").innerText = "ডাটা পেতে সমস্যা হচ্ছে! কিছুক্ষণ পর চেষ্টা করুন।";
         });
+    }
+
+    function renderTable(data) {
+      let tbody = document.querySelector("#dataTable tbody");
+      tbody.innerHTML = "";
+      // Skip row 0 (headers)
+      for (let i = 1; i < data.length; i++) {
+        let r = data[i];
+        let row = `<tr>
+          <td>${r[0] || ''}</td>
+          <td>${r[1] || ''}</td>
+          <td><b>${r[2] || ''}</b></td>
+          <td>${r[3] || 0}</td>
+          <td>${r[4] || 0}</td>
+          <td>${r[5] || 0}</td>
+          <td>${r[6] || 0}</td>
+          <td>${r[7] || 0}</td>
+          <td>${r[8] || 0}</td>
+          <td>${r[9] || ''}</td>
+          <td>${r[10] || 0}</td>
+          <td>${r[11] || 0}</td>
+          <td><b>৳ ${r[19] || 0}</b></td>
+        </tr>`;
+        tbody.innerHTML += row;
+      }
+    }
+
+    function filterAdminData() {
+      let q = document.getElementById("searchInput").value.toLowerCase();
+      let filtered = allAdminRecords.filter((row, index) => {
+        if (index === 0) return true; // Keep Header
+        return row.some(cell => String(cell).toLowerCase().includes(q));
+      });
+      renderTable(filtered);
     }
   </script>
 </body>
