@@ -1,0 +1,221 @@
+<!DOCTYPE html>
+<html lang="bn">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Accounts Management App</title>
+  <style>
+    body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background: #eef2f3; margin: 0; padding: 15px; }
+    .card { background: #fff; padding: 20px; border-radius: 12px; box-shadow: 0 4px 10px rgba(0,0,0,0.08); max-width: 500px; margin: 0 auto 20px auto; }
+    h2, h3, h4 { color: #00796b; margin-top: 0; }
+    label { font-weight: bold; font-size: 14px; color: #333; }
+    input, select, button { width: 100%; padding: 12px; margin: 8px 0 16px 0; border: 1px solid #ccc; border-radius: 6px; box-sizing: border-box; font-size: 14px; }
+    button { background: #00796b; color: white; border: none; font-weight: bold; cursor: pointer; border-radius: 6px; font-size: 16px; }
+    button:hover { background: #004d40; }
+    .hidden { display: none; }
+    .denom-row { display: flex; align-items: center; gap: 10px; margin-bottom: 5px; }
+    .denom-row label { width: 80px; margin: 0; }
+    .denom-row input { margin: 0; }
+    table { width: 100%; border-collapse: collapse; margin-top: 10px; font-size: 12px; }
+    th, td { border: 1px solid #ddd; padding: 8px; text-align: left; }
+    th { background: #00796b; color: white; }
+    .total-box { background: #e0f2f1; padding: 10px; border-radius: 6px; border: 1px solid #80cbc4; text-align: center; margin-bottom: 15px; }
+  </style>
+</head>
+<body>
+
+  <!-- LOGIN SCREEN -->
+  <div id="loginScreen" class="card">
+    <h2>Accounts App Login</h2>
+    <label>User Role:</label>
+    <select id="roleSelect">
+      <option value="DSO">DSO</option>
+      <option value="Admin">Admin</option>
+    </select>
+    
+    <label>User ID / Name:</label>
+    <input type="text" id="userIdInput" placeholder="DSO ID (801-845) / Admin Name">
+    
+    <label>Password:</label>
+    <input type="password" id="passwordInput" placeholder="Enter Password">
+    
+    <button onclick="login()">Login</button>
+  </div>
+
+  <!-- DSO ENTRY SCREEN -->
+  <div id="dsoScreen" class="card hidden">
+    <h3>DSO Entry Screen (ID: <span id="userDisplay"></span>)</h3>
+    
+    <h4>Received Section</h4>
+    <label>e-Money Received:</label>
+    <input type="number" id="emReceived" placeholder="0">
+    <label>Cash Received:</label>
+    <input type="number" id="cashReceived" placeholder="0">
+    <label>DSO Received:</label>
+    <input type="number" id="dsoReceived" placeholder="0">
+    <label>Bank Received Amount:</label>
+    <input type="number" id="bankReceived" placeholder="0">
+
+    <hr style="border: 0.5px solid #eee; margin: 20px 0;">
+
+    <h4>Deposit & Return Section</h4>
+    <label>e-Money Return:</label>
+    <input type="number" id="emReturn" placeholder="0">
+    <label>Bank Deposit:</label>
+    <input type="number" id="bankDeposit" placeholder="0">
+    <label>Deposit Bank Name:</label>
+    <input type="text" id="bankName" placeholder="e.g. Dutch Bangla Bank">
+    <label>DSO Transfer:</label>
+    <input type="number" id="dsoTransfer" placeholder="0">
+    <label>Cash Deposit:</label>
+    <input type="number" id="cashDeposit" placeholder="0">
+
+    <hr style="border: 0.5px solid #eee; margin: 20px 0;">
+
+    <h4>Cash Denomination Calculator</h4>
+    <div class="denom-row"><label>৳ 2000:</label><input type="number" class="note" data-value="2000" oninput="calcCash()" placeholder="0"></div>
+    <div class="denom-row"><label>৳ 500:</label><input type="number" class="note" data-value="500" oninput="calcCash()" placeholder="0"></div>
+    <div class="denom-row"><label>৳ 200:</label><input type="number" class="note" data-value="200" oninput="calcCash()" placeholder="0"></div>
+    <div class="denom-row"><label>৳ 100:</label><input type="number" class="note" data-value="100" oninput="calcCash()" placeholder="0"></div>
+    <div class="denom-row"><label>৳ 50:</label><input type="number" class="note" data-value="50" oninput="calcCash()" placeholder="0"></div>
+    <div class="denom-row"><label>৳ 20:</label><input type="number" class="note" data-value="20" oninput="calcCash()" placeholder="0"></div>
+    <div class="denom-row"><label>৳ 10:</label><input type="number" class="note" data-value="10" oninput="calcCash()" placeholder="0"></div>
+    
+    <div class="total-box">
+      <h3>Calculated Cash: ৳ <span id="totalCashDisplay">0</span></h3>
+    </div>
+
+    <button onclick="submitData()" id="subBtn">Submit Data</button>
+  </div>
+
+  <!-- ADMIN DASHBOARD -->
+  <div id="adminScreen" class="card hidden" style="max-width: 800px;">
+    <h3>Admin Dashboard</h3>
+    <button onclick="loadAdminData()">Refresh Data</button>
+    <div style="overflow-x:auto;">
+      <table id="dataTable">
+        <thead>
+          <tr>
+            <th>Date</th>
+            <th>User ID</th>
+            <th>Cash Rec</th>
+            <th>Bank Dep</th>
+            <th>Bank Name</th>
+            <th>Total Cash</th>
+          </tr>
+        </thead>
+        <tbody></tbody>
+      </table>
+    </div>
+  </div>
+
+  <script>
+    const GOOGLE_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbwqsTwqaZmoT0FzmDg_AjPnNwkRM_9JzIET_BYSRxC4ocrpFTJWht4wWcqDLOeSeeKnbw/exec"; 
+    let currentUser = "";
+
+    function login() {
+      const role = document.getElementById("roleSelect").value;
+      const uid = document.getElementById("userIdInput").value.trim();
+      const pass = document.getElementById("passwordInput").value.trim();
+
+      if (role === "Admin") {
+        if (pass === "#@800") {
+          showScreen("adminScreen");
+          loadAdminData();
+        } else { alert("ভুল অ্যাডমিন পাসওয়ার্ড!"); }
+      } else {
+        let idNum = parseInt(uid);
+        if (idNum >= 801 && idNum <= 845) {
+          if (pass === "1234") {
+            currentUser = uid;
+            document.getElementById("userDisplay").innerText = uid;
+            showScreen("dsoScreen");
+          } else { alert("ভুল পাসওয়ার্ড! (ডিফল্ট: 1234)"); }
+        } else { alert("DSO ID অবশ্যই ৮০১ থেকে ৮৪৫ এর মধ্যে হতে হবে।"); }
+      }
+    }
+
+    function showScreen(id) {
+      document.getElementById("loginScreen").classList.add("hidden");
+      document.getElementById("dsoScreen").classList.add("hidden");
+      document.getElementById("adminScreen").classList.add("hidden");
+      document.getElementById(id).classList.remove("hidden");
+    }
+
+    function calcCash() {
+      let total = 0;
+      document.querySelectorAll(".note").forEach(input => {
+        let val = parseInt(input.getAttribute("data-value"));
+        let count = parseInt(input.value) || 0;
+        total += val * count;
+      });
+      document.getElementById("totalCashDisplay").innerText = total;
+    }
+
+    function submitData() {
+      const subBtn = document.getElementById("subBtn");
+      subBtn.disabled = true;
+      subBtn.innerText = "Saving Data...";
+
+      const now = new Date();
+      const dateStr = now.toISOString().split('T')[0];
+      const monthStr = dateStr.substring(0, 7);
+
+      const payload = {
+        date: dateStr, month: monthStr, userId: currentUser,
+        emReceived: document.getElementById("emReceived").value || 0,
+        cashReceived: document.getElementById("cashReceived").value || 0,
+        dsoReceived: document.getElementById("dsoReceived").value || 0,
+        bankReceived: document.getElementById("bankReceived").value || 0,
+        emReturn: document.getElementById("emReturn").value || 0,
+        bankDeposit: document.getElementById("bankDeposit").value || 0,
+        bankName: document.getElementById("bankName").value || "",
+        dsoTransfer: document.getElementById("dsoTransfer").value || 0,
+        cashDeposit: document.getElementById("cashDeposit").value || 0,
+        n2000: document.querySelector('[data-value="2000"]').value || 0,
+        n500: document.querySelector('[data-value="500"]').value || 0,
+        n200: document.querySelector('[data-value="200"]').value || 0,
+        n100: document.querySelector('[data-value="100"]').value || 0,
+        n50: document.querySelector('[data-value="50"]').value || 0,
+        n20: document.querySelector('[data-value="20"]').value || 0,
+        n10: document.querySelector('[data-value="10"]').value || 0,
+        totalCash: document.getElementById("totalCashDisplay").innerText
+      };
+
+      fetch(GOOGLE_SCRIPT_URL, {
+        method: "POST",
+        mode: "no-cors",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload)
+      }).then(() => {
+        alert("ডাটা সফলভাবে সেভ হয়েছে!");
+        location.reload();
+      }).catch(err => {
+        alert("Error saving data");
+        subBtn.disabled = false;
+        subBtn.innerText = "Submit Data";
+      });
+    }
+
+    function loadAdminData() {
+      fetch(GOOGLE_SCRIPT_URL)
+        .then(res => res.json())
+        .then(data => {
+          let tbody = document.querySelector("#dataTable tbody");
+          tbody.innerHTML = "";
+          for (let i = 1; i < data.length; i++) {
+            let row = `<tr>
+              <td>${data[i][0]}</td>
+              <td>${data[i][2]}</td>
+              <td>${data[i][4]}</td>
+              <td>${data[i][8]}</td>
+              <td>${data[i][9]}</td>
+              <td>${data[i][19]}</td>
+            </tr>`;
+            tbody.innerHTML += row;
+          }
+        });
+    }
+  </script>
+</body>
+</html>
