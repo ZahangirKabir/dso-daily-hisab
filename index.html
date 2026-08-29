@@ -55,6 +55,7 @@
     
     .slip-link { color: #0288d1; font-weight: bold; text-decoration: none; }
     .slip-link:hover { text-decoration: underline; }
+    .req-star { color: red; }
   </style>
 </head>
 <body>
@@ -97,10 +98,13 @@
     <h4 class="sec-ret-title">Deposit & Return Section</h4>
     <label>e-Money Return:</label>
     <input type="number" id="emReturn" oninput="calcDsoSum()" placeholder="0">
+    
     <label>Bank Deposit:</label>
     <input type="number" id="bankDeposit" placeholder="0">
-    <label>Deposit Bank Name:</label>
-    <input type="text" id="bankName" placeholder="e.g. DBBL">
+    
+    <label>Deposit Bank Name: <span class="req-star" id="bankReqMark" style="display:none;">* (আবশ্যক)</span></label>
+    <input type="text" id="bankName" placeholder="e.g. DBBL / City Bank">
+    
     <label>DSO Transfer:</label>
     <input type="number" id="dsoTransfer" placeholder="0">
     <label>Cash Deposit:</label>
@@ -110,7 +114,7 @@
     <h4 class="sec-slip-title">Bank Deposit Slips (Photo Upload)</h4>
     <div class="slip-grid">
       <div>
-        <label>Deposit Slip 1:</label>
+        <label>Deposit Slip 1: <span class="req-star" id="slipReqMark" style="display:none;">*</span></label>
         <input type="file" id="slip1" accept="image/*">
       </div>
       <div>
@@ -285,7 +289,6 @@
       document.getElementById("totalCashDisplay").innerText = total;
     }
 
-    // ইমেজকে Base64 স্ট্রিপে রূপান্তর করার ফাংশন
     function getBase64(file) {
       return new Promise((resolve, reject) => {
         if (!file) { resolve(""); return; }
@@ -297,15 +300,32 @@
     }
 
     async function submitData() {
+      const bankDepositVal = parseFloat(document.getElementById("bankDeposit").value) || 0;
+      const bankNameVal = document.getElementById("bankName").value.trim();
+      let file1 = document.getElementById("slip1").files[0];
+
+      // Validation Check: Bank Deposit থাকলে Bank Name এবং Slip 1 বাধ্যতামূলক
+      if (bankDepositVal > 0) {
+        if (!bankNameVal) {
+          alert("Error: Bank Deposit দিয়ে থাকলে অবশ্যই Bank Name লিখতে হবে!");
+          document.getElementById("bankName").focus();
+          return;
+        }
+        if (!file1) {
+          alert("Error: Bank Deposit দিয়ে থাকলে কমপক্ষে ১টি Deposit Slip এর ছবি আপলোড করতে হবে!");
+          document.getElementById("slip1").focus();
+          return;
+        }
+      }
+
       const subBtn = document.getElementById("subBtn");
       subBtn.disabled = true;
-      subBtn.innerText = "Saving Data & Photos...";
+      subBtn.innerText = "Saving Data & Uploading Slips...";
 
       const now = new Date();
       const dateStr = now.toISOString().split('T')[0];
       const monthStr = dateStr.substring(0, 7);
 
-      let file1 = document.getElementById("slip1").files[0];
       let file2 = document.getElementById("slip2").files[0];
       let file3 = document.getElementById("slip3").files[0];
       let file4 = document.getElementById("slip4").files[0];
@@ -322,8 +342,8 @@
         dsoReceived: document.getElementById("dsoReceived").value || 0,
         bankReceived: document.getElementById("bankReceived").value || 0,
         emReturn: document.getElementById("emReturn").value || 0,
-        bankDeposit: document.getElementById("bankDeposit").value || 0,
-        bankName: document.getElementById("bankName").value || "",
+        bankDeposit: bankDepositVal,
+        bankName: bankNameVal,
         dsoTransfer: document.getElementById("dsoTransfer").value || 0,
         cashDeposit: document.getElementById("cashDeposit").value || 0,
         n1000: document.querySelector('[data-value="1000"]').value || 0,
@@ -344,7 +364,7 @@
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(payload)
       }).then(() => {
-        alert("ডাটা ও স্লিপের ছবি সফলভাবে সেভ হয়েছে!");
+        alert("ডাটা ও ব্যাংক স্লিপ সফলভাবে সেভ হয়েছে!");
         location.reload();
       }).catch(err => {
         alert("Error saving data");
