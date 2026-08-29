@@ -87,13 +87,11 @@
     <hr style="border: 0.5px solid #eee; margin: 20px 0;">
 
     <h4>Cash Denomination Calculator</h4>
-    <div class="denom-row"><label>৳ 2000:</label><input type="number" class="note" data-value="2000" oninput="calcCash()" placeholder="0"></div>
+    <div class="denom-row"><label>৳ 1000:</label><input type="number" class="note" data-value="1000" oninput="calcCash()" placeholder="0"></div>
     <div class="denom-row"><label>৳ 500:</label><input type="number" class="note" data-value="500" oninput="calcCash()" placeholder="0"></div>
     <div class="denom-row"><label>৳ 200:</label><input type="number" class="note" data-value="200" oninput="calcCash()" placeholder="0"></div>
     <div class="denom-row"><label>৳ 100:</label><input type="number" class="note" data-value="100" oninput="calcCash()" placeholder="0"></div>
     <div class="denom-row"><label>৳ 50:</label><input type="number" class="note" data-value="50" oninput="calcCash()" placeholder="0"></div>
-    <div class="denom-row"><label>৳ 20:</label><input type="number" class="note" data-value="20" oninput="calcCash()" placeholder="0"></div>
-    <div class="denom-row"><label>৳ 10:</label><input type="number" class="note" data-value="10" oninput="calcCash()" placeholder="0"></div>
     
     <div class="total-box">
       <h3>Calculated Cash: ৳ <span id="totalCashDisplay">0</span></h3>
@@ -227,13 +225,11 @@
         bankName: document.getElementById("bankName").value || "",
         dsoTransfer: document.getElementById("dsoTransfer").value || 0,
         cashDeposit: document.getElementById("cashDeposit").value || 0,
-        n2000: document.querySelector('[data-value="2000"]').value || 0,
+        n1000: document.querySelector('[data-value="1000"]').value || 0,
         n500: document.querySelector('[data-value="500"]').value || 0,
         n200: document.querySelector('[data-value="200"]').value || 0,
         n100: document.querySelector('[data-value="100"]').value || 0,
         n50: document.querySelector('[data-value="50"]').value || 0,
-        n20: document.querySelector('[data-value="20"]').value || 0,
-        n10: document.querySelector('[data-value="10"]').value || 0,
         totalCash: document.getElementById("totalCashDisplay").innerText
       };
 
@@ -252,7 +248,6 @@
       });
     }
 
-    // CORS সমস্যা দূর করতে JSONP দিয়ে ডাটা লোড করার ফাংশন
     function loadAdminData() {
       document.getElementById("loadingText").style.display = "block";
       document.getElementById("loadingText").innerText = "গুগল শিট থেকে তথ্য লোড হচ্ছে...";
@@ -290,6 +285,7 @@
       tbody.innerHTML = "";
       for (let i = 1; i < data.length; i++) {
         let r = data[i];
+        let lastColIndex = r.length - 1; // Total Cash শেষ কলামে থাকবে
         let row = `<tr>
           <td>${r[0] || ''}</td>
           <td>${r[1] || ''}</td>
@@ -303,7 +299,7 @@
           <td>${r[9] || ''}</td>
           <td>${r[10] || 0}</td>
           <td>${r[11] || 0}</td>
-          <td><b>৳ ${r[19] || 0}</b></td>
+          <td><b>৳ ${r[lastColIndex] || 0}</b></td>
         </tr>`;
         tbody.innerHTML += row;
       }
