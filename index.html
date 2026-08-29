@@ -54,11 +54,10 @@
     .slip-grid label { font-size: 12px; }
     .slip-grid input { margin-bottom: 0; }
     
-    .slip-link { color: #0288d1; font-weight: bold; text-decoration: none; }
-    .slip-link:hover { text-decoration: underline; }
+    .slip-btn { background: #0288d1; color: white; padding: 4px 8px; text-decoration: none; border-radius: 4px; font-weight: bold; display: inline-block; font-size: 10px; }
+    .slip-btn:hover { background: #01579b; }
     .req-star { color: red; }
-
-    .ocr-loader { font-size: 12px; color: #0288d1; font-weight: bold; margin-top: 4px; display: none; }
+    .ocr-loader { font-size: 12px; color: #0288d1; font-weight: bold; margin-top: 5px; display: none; }
   </style>
 </head>
 <body>
@@ -104,7 +103,7 @@
     <input type="number" id="bankDeposit" placeholder="0">
     
     <label>Deposit Bank Name: <span class="req-star" id="bankReqMark" style="display:none;">*</span></label>
-    <input type="text" id="bankName" placeholder="e.g. DBBL / City Bank (Auto Detected)">
+    <input type="text" id="bankName" placeholder="e.g. DBBL / City Bank">
     
     <label>DSO Transfer:</label>
     <input type="number" id="dsoTransfer" placeholder="0">
@@ -130,7 +129,7 @@
         <input type="file" id="slip4" accept="image/*" onchange="processSlipImage(this)">
       </div>
     </div>
-    <div id="ocrStatus" class="ocr-loader">🔍 Scanning bank slip for Bank Name...</div>
+    <div id="ocrStatus" class="ocr-loader">🔍 স্লিপের ছবি থেকে ব্যাংকের নাম স্ক্যান করা হচ্ছে...</div>
 
     <div class="summary-box" style="margin-top: 15px;">
       <div class="sub-sum-box">
@@ -228,25 +227,19 @@
     let currentUser = "";
     let allAdminRecords = [];
 
-    // পরিচিত ব্যাংকের তালিকা (OCR মেলানোর জন্য)
     const KNOWN_BANKS = [
-      { name: "Dutch-Bangla Bank / DBBL", keywords: ["dutch", "bangla", "dbbl", "dutch-bangla"] },
+      { name: "Dutch-Bangla Bank / DBBL", keywords: ["dutch", "bangla", "dbbl"] },
       { name: "Islami Bank Bangladesh", keywords: ["islami", "ibbl"] },
-      { name: "City Bank", keywords: ["city bank", "citybank", "the city bank"] },
-      { name: "BRAC Bank", keywords: ["brac", "brac bank"] },
+      { name: "City Bank", keywords: ["city bank", "citybank"] },
+      { name: "BRAC Bank", keywords: ["brac"] },
       { name: "Eastern Bank (EBL)", keywords: ["eastern", "ebl"] },
       { name: "Sonali Bank", keywords: ["sonali"] },
       { name: "Janata Bank", keywords: ["janata"] },
       { name: "Agrani Bank", keywords: ["agrani"] },
       { name: "Pubali Bank", keywords: ["pubali"] },
-      { name: "United Commercial Bank (UCB)", keywords: ["united commercial", "ucb", "ucbl"] },
-      { name: "Prime Bank", keywords: ["prime bank"] },
+      { name: "United Commercial Bank (UCB)", keywords: ["united commercial", "ucb"] },
+      { name: "Prime Bank", keywords: ["prime"] },
       { name: "Mercantile Bank", keywords: ["mercantile"] },
-      { name: "National Bank", keywords: ["national bank"] },
-      { name: "Standard Bank", keywords: ["standard bank"] },
-      { name: "Dhaka Bank", keywords: ["dhaka bank"] },
-      { name: "First Security Islami Bank (FSIBL)", keywords: ["first security", "fsibl"] },
-      { name: "Social Islami Bank (SIBL)", keywords: ["social islami", "sibl"] },
       { name: "Southeast Bank", keywords: ["southeast"] },
       { name: "Mutual Trust Bank (MTB)", keywords: ["mutual trust", "mtb"] },
       { name: "Bank Asia", keywords: ["bank asia"] }
@@ -311,13 +304,12 @@
       document.getElementById("totalCashDisplay").innerText = total;
     }
 
-    // OCR: ছবি থেকে ব্যাংকের নাম রিড করার ফাংশন
     async function processSlipImage(input) {
       if (!input.files || !input.files[0]) return;
       
       const statusDiv = document.getElementById("ocrStatus");
       statusDiv.style.display = "block";
-      statusDiv.innerText = "🔍 স্লিপ থেকে ব্যাংকের নাম স্ক্যান করা হচ্ছে...";
+      statusDiv.innerText = "🔍 স্লিপের ছবি থেকে ব্যাংকের নাম স্ক্যান করা হচ্ছে...";
 
       try {
         const file = input.files[0];
@@ -343,7 +335,6 @@
           statusDiv.innerText = "ℹ️ ব্যাংকের নাম নিশ্চিত হওয়া যায়নি, অনুগ্রহ করে নিজে টাইপ করুন।";
         }
       } catch (err) {
-        console.error(err);
         statusDiv.innerText = "ℹ️ ব্যাংকের নাম রিড করা যায়নি, নিজে টাইপ করুন।";
       }
     }
@@ -457,60 +448,4 @@
       for (let i = 1; i < data.length; i++) {
         let emRec = parseFloat(data[i][3]) || 0;
         let cashRec = parseFloat(data[i][4]) || 0;
-        let dsoRec = parseFloat(data[i][5]) || 0;
-        let bankRec = parseFloat(data[i][6]) || 0;
-
-        totalReceivedAll += (emRec + cashRec + dsoRec + bankRec);
-        totalReturnAll += parseFloat(data[i][7]) || 0;
-        totalBankDep += parseFloat(data[i][8]) || 0;
-      }
-
-      document.getElementById("totalEntriesCount").innerText = totalRecCount;
-      document.getElementById("totalReceivedAllSum").innerText = totalReceivedAll;
-      document.getElementById("totalReturnAllSum").innerText = totalReturnAll;
-      document.getElementById("totalBankDepSum").innerText = totalBankDep;
-    }
-
-    function renderTable(data) {
-      let tbody = document.querySelector("#dataTable tbody");
-      tbody.innerHTML = "";
-      for (let i = 1; i < data.length; i++) {
-        let r = data[i];
-        
-        let makeLink = (url, label) => url ? `<a class="slip-link" href="${url}" target="_blank">${label}</a>` : '-';
-
-        let row = `<tr>
-          <td>${r[0] || ''}</td>
-          <td>${r[1] || ''}</td>
-          <td><b>${r[2] || ''}</b></td>
-          <td style="background:#f1f8e9;">${r[3] || 0}</td>
-          <td style="background:#f1f8e9;">${r[4] || 0}</td>
-          <td style="background:#f1f8e9;">${r[5] || 0}</td>
-          <td style="background:#f1f8e9;">${r[6] || 0}</td>
-          <td style="background:#ffebee;">${r[7] || 0}</td>
-          <td style="background:#ffebee;">${r[8] || 0}</td>
-          <td style="background:#ffebee;">${r[9] || ''}</td>
-          <td style="background:#ffebee;">${r[10] || 0}</td>
-          <td style="background:#ffebee;">${r[11] || 0}</td>
-          <td style="background:#e0f2f1;"><b>৳ ${r[17] || 0}</b></td>
-          <td>${makeLink(r[18], 'View 1')}</td>
-          <td>${makeLink(r[19], 'View 2')}</td>
-          <td>${makeLink(r[20], 'View 3')}</td>
-          <td>${makeLink(r[21], 'View 4')}</td>
-        </tr>`;
-        tbody.innerHTML += row;
-      }
-    }
-
-    function filterAdminData() {
-      let q = document.getElementById("searchInput").value.toLowerCase();
-      let filtered = allAdminRecords.filter((row, index) => {
-        if (index === 0) return true;
-        return row.some(cell => String(cell).toLowerCase().includes(q));
-      });
-      renderTable(filtered);
-      updateSummaryCards(filtered);
-    }
-  </script>
-</body>
-</html>
+        let
