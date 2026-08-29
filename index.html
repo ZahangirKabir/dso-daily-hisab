@@ -155,7 +155,7 @@
   </div>
 
   <script>
-    const GOOGLE_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbwqsTwqaZmoT0FzmDg_AjPnNwkRM_9JzIET_BYSRxC4ocrpFTJWht4wWcqDLOeSeeKnbw/exec"; 
+    const GOOGLE_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbySQJnbl6DnF_Su0w36vCixcM5yg60j-ZGt-K_VPBSKVap1HT6AS5V9ydZfTYJgGuiEBA/exec"; 
     let currentUser = "";
     let allAdminRecords = [];
 
@@ -285,7 +285,7 @@
       tbody.innerHTML = "";
       for (let i = 1; i < data.length; i++) {
         let r = data[i];
-        let lastColIndex = r.length - 1; // Total Cash শেষ কলামে থাকবে
+        let lastColIndex = r.length - 1;
         let row = `<tr>
           <td>${r[0] || ''}</td>
           <td>${r[1] || ''}</td>
