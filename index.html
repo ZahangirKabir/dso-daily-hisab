@@ -6,7 +6,7 @@
   <title>Accounts Management App</title>
   <style>
     body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background: #eef2f3; margin: 0; padding: 15px; }
-    .card { background: #fff; padding: 20px; border-radius: 12px; box-shadow: 0 4px 10px rgba(0,0,0,0.08); max-width: 600px; margin: 0 auto 20px auto; }
+    .card { background: #fff; padding: 20px; border-radius: 12px; box-shadow: 0 4px 10px rgba(0,0,0,0.08); max-width: 650px; margin: 0 auto 20px auto; }
     h2, h3, h4 { color: #00796b; margin-top: 0; }
     label { font-weight: bold; font-size: 14px; color: #333; }
     input, select, button { width: 100%; padding: 12px; margin: 8px 0 16px 0; border: 1px solid #ccc; border-radius: 6px; box-sizing: border-box; font-size: 14px; }
@@ -20,14 +20,14 @@
     .denom-row label { width: 80px; margin: 0; }
     .denom-row input { margin: 0; }
     
-    /* Table Styling with Different Header Colors */
     table { width: 100%; border-collapse: collapse; margin-top: 10px; font-size: 11px; }
     th, td { border: 1px solid #ddd; padding: 8px; text-align: center; }
     
     th.th-base { background: #37474f; color: white; }
-    th.th-rec { background: #2e7d32; color: white; } /* Received Header - Green */
-    th.th-ret { background: #c62828; color: white; } /* Return/Deposit Header - Red */
-    th.th-cash { background: #00796b; color: white; } /* Cash Header - Teal */
+    th.th-rec { background: #2e7d32; color: white; }
+    th.th-ret { background: #c62828; color: white; }
+    th.th-cash { background: #00796b; color: white; }
+    th.th-slip { background: #0288d1; color: white; }
     
     .total-box { background: #e0f2f1; padding: 10px; border-radius: 6px; border: 1px solid #80cbc4; text-align: center; margin-bottom: 15px; }
     
@@ -44,9 +44,17 @@
     .filter-box { display: flex; gap: 10px; margin-bottom: 10px; flex-wrap: wrap; }
     .filter-box input { margin: 0; }
 
-    /* Form Section Titles */
     .sec-rec-title { color: #2e7d32; border-bottom: 2px solid #2e7d32; padding-bottom: 4px; margin-top: 10px; }
     .sec-ret-title { color: #c62828; border-bottom: 2px solid #c62828; padding-bottom: 4px; margin-top: 20px; }
+    .sec-slip-title { color: #0288d1; border-bottom: 2px solid #0288d1; padding-bottom: 4px; margin-top: 20px; }
+    
+    .slip-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+    .slip-grid div { background: #f9f9f9; padding: 8px; border-radius: 6px; border: 1px dashed #ccc; }
+    .slip-grid label { font-size: 12px; }
+    .slip-grid input { margin-bottom: 0; }
+    
+    .slip-link { color: #0288d1; font-weight: bold; text-decoration: none; }
+    .slip-link:hover { text-decoration: underline; }
   </style>
 </head>
 <body>
@@ -98,6 +106,27 @@
     <label>Cash Deposit:</label>
     <input type="number" id="cashDeposit" placeholder="0">
 
+    <!-- Bank Deposit Slips Upload Section -->
+    <h4 class="sec-slip-title">Bank Deposit Slips (Photo Upload)</h4>
+    <div class="slip-grid">
+      <div>
+        <label>Deposit Slip 1:</label>
+        <input type="file" id="slip1" accept="image/*">
+      </div>
+      <div>
+        <label>Deposit Slip 2:</label>
+        <input type="file" id="slip2" accept="image/*">
+      </div>
+      <div>
+        <label>Deposit Slip 3:</label>
+        <input type="file" id="slip3" accept="image/*">
+      </div>
+      <div>
+        <label>Deposit Slip 4:</label>
+        <input type="file" id="slip4" accept="image/*">
+      </div>
+    </div>
+
     <!-- DSO Live Summary Box -->
     <div class="summary-box" style="margin-top: 15px;">
       <div class="sub-sum-box">
@@ -127,7 +156,7 @@
   </div>
 
   <!-- ADMIN DASHBOARD -->
-  <div id="adminScreen" class="card hidden" style="max-width: 95%; width: 100%;">
+  <div id="adminScreen" class="card hidden" style="max-width: 98%; width: 100%;">
     <div class="header-flex">
       <h3 style="margin:0;">Admin Control Dashboard</h3>
       <button class="btn-logout" onclick="logout()">Logout</button>
@@ -168,21 +197,23 @@
             <th class="th-base">Month</th>
             <th class="th-base">DSO ID</th>
             
-            <!-- Received Header Columns (Green) -->
             <th class="th-rec">e-Mon Rec</th>
             <th class="th-rec">Cash Rec</th>
             <th class="th-rec">DSO Rec</th>
             <th class="th-rec">Bank Rec</th>
             
-            <!-- Return & Deposit Header Columns (Red/Orange) -->
             <th class="th-ret">e-Mon Ret</th>
             <th class="th-ret">Bank Dep</th>
             <th class="th-ret">Bank Name</th>
             <th class="th-ret">DSO Trans</th>
             <th class="th-ret">Cash Dep</th>
             
-            <!-- Calculated Cash Header Column -->
             <th class="th-cash">Calculated Cash</th>
+
+            <th class="th-slip">Slip 1</th>
+            <th class="th-slip">Slip 2</th>
+            <th class="th-slip">Slip 3</th>
+            <th class="th-slip">Slip 4</th>
           </tr>
         </thead>
         <tbody></tbody>
@@ -254,14 +285,35 @@
       document.getElementById("totalCashDisplay").innerText = total;
     }
 
-    function submitData() {
+    // ইমেজকে Base64 স্ট্রিপে রূপান্তর করার ফাংশন
+    function getBase64(file) {
+      return new Promise((resolve, reject) => {
+        if (!file) { resolve(""); return; }
+        const reader = new FileReader();
+        reader.readAsDataURL(file);
+        reader.onload = () => resolve(reader.result);
+        reader.onerror = error => reject(error);
+      });
+    }
+
+    async function submitData() {
       const subBtn = document.getElementById("subBtn");
       subBtn.disabled = true;
-      subBtn.innerText = "Saving Data...";
+      subBtn.innerText = "Saving Data & Photos...";
 
       const now = new Date();
       const dateStr = now.toISOString().split('T')[0];
       const monthStr = dateStr.substring(0, 7);
+
+      let file1 = document.getElementById("slip1").files[0];
+      let file2 = document.getElementById("slip2").files[0];
+      let file3 = document.getElementById("slip3").files[0];
+      let file4 = document.getElementById("slip4").files[0];
+
+      let slip1Base64 = await getBase64(file1);
+      let slip2Base64 = await getBase64(file2);
+      let slip3Base64 = await getBase64(file3);
+      let slip4Base64 = await getBase64(file4);
 
       const payload = {
         date: dateStr, month: monthStr, userId: currentUser,
@@ -279,7 +331,11 @@
         n200: document.querySelector('[data-value="200"]').value || 0,
         n100: document.querySelector('[data-value="100"]').value || 0,
         n50: document.querySelector('[data-value="50"]').value || 0,
-        totalCash: document.getElementById("totalCashDisplay").innerText
+        totalCash: document.getElementById("totalCashDisplay").innerText,
+        slip1: slip1Base64,
+        slip2: slip2Base64,
+        slip3: slip3Base64,
+        slip4: slip4Base64
       };
 
       fetch(GOOGLE_SCRIPT_URL, {
@@ -288,7 +344,7 @@
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(payload)
       }).then(() => {
-        alert("ডাটা সফলভাবে সেভ হয়েছে!");
+        alert("ডাটা ও স্লিপের ছবি সফলভাবে সেভ হয়েছে!");
         location.reload();
       }).catch(err => {
         alert("Error saving data");
@@ -342,7 +398,9 @@
       tbody.innerHTML = "";
       for (let i = 1; i < data.length; i++) {
         let r = data[i];
-        let lastColIndex = r.length - 1;
+        
+        let makeLink = (url, label) => url ? `<a class="slip-link" href="${url}" target="_blank">${label}</a>` : '-';
+
         let row = `<tr>
           <td>${r[0] || ''}</td>
           <td>${r[1] || ''}</td>
@@ -356,7 +414,11 @@
           <td style="background:#ffebee;">${r[9] || ''}</td>
           <td style="background:#ffebee;">${r[10] || 0}</td>
           <td style="background:#ffebee;">${r[11] || 0}</td>
-          <td style="background:#e0f2f1;"><b>৳ ${r[lastColIndex] || 0}</b></td>
+          <td style="background:#e0f2f1;"><b>৳ ${r[17] || 0}</b></td>
+          <td>${makeLink(r[18], 'View 1')}</td>
+          <td>${makeLink(r[19], 'View 2')}</td>
+          <td>${makeLink(r[20], 'View 3')}</td>
+          <td>${makeLink(r[21], 'View 4')}</td>
         </tr>`;
         tbody.innerHTML += row;
       }
