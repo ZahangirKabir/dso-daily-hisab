@@ -331,7 +331,6 @@
       document.getElementById("totalCashDisplay").innerText = total;
     }
 
-    // Bank Deposit বা Bank Rec থাকলে Star লাল চিহ্নিত করা
     function checkBankRequirement() {
       let depVal = parseFloat(document.getElementById("bankDeposit").value) || 0;
       let recVal = parseFloat(document.getElementById("bankReceived").value) || 0;
@@ -396,7 +395,6 @@
       const bankNameVal = document.getElementById("bankName").value.trim();
       let file1 = document.getElementById("slip1").files[0];
 
-      // Bank Amount থাকলে বাধ্যতামূলক চেক
       if (bankDepositVal > 0 || bankReceivedVal > 0) {
         if (!bankNameVal) {
           alert("Error: ব্যাংকে লেনদেন বা ডিপোজিট থাকলে অবশ্যই Bank Name দিতে হবে!");
@@ -465,7 +463,6 @@
       });
     }
 
-    // DSO নিজের ইতিহাস লোড করার ফাংশন
     function loadDsoHistory() {
       document.getElementById("dsoHistoryBox").classList.remove("hidden");
       const script = document.createElement('script');
@@ -478,27 +475,29 @@
       tbody.innerHTML = "";
       
       let count = 0;
-      for (let i = 1; i < data.length; i++) {
-        let r = data[i];
-        if (String(r[2]) === String(currentUser)) {
-          count++;
-          let emRec = parseFloat(r[3]) || 0;
-          let cashRec = parseFloat(r[4]) || 0;
-          let dsoRec = parseFloat(r[5]) || 0;
-          let bankRec = parseFloat(r[6]) || 0;
-          let totalRec = emRec + cashRec + dsoRec + bankRec;
+      if (data && data.length > 1) {
+        for (let i = 1; i < data.length; i++) {
+          let r = data[i];
+          if (String(r[2]) === String(currentUser)) {
+            count++;
+            let emRec = parseFloat(r[3]) || 0;
+            let cashRec = parseFloat(r[4]) || 0;
+            let dsoRec = parseFloat(r[5]) || 0;
+            let bankRec = parseFloat(r[6]) || 0;
+            let totalRec = emRec + cashRec + dsoRec + bankRec;
 
-          let slipLink = r[18] ? `<a class="slip-btn" href="${r[18]}" target="_blank">View</a>` : '-';
+            let slipLink = (r[18] && String(r[18]).startsWith('http')) ? `<a class="slip-btn" href="${r[18]}" target="_blank">View</a>` : '-';
 
-          let row = `<tr>
-            <td>${r[0] || ''}</td>
-            <td style="color:#2e7d32; font-weight:bold;">৳ ${totalRec}</td>
-            <td style="color:#c62828;">৳ ${r[8] || 0}</td>
-            <td>${r[9] || '-'}</td>
-            <td>৳ ${r[17] || 0}</td>
-            <td>${slipLink}</td>
-          </tr>`;
-          tbody.innerHTML += row;
+            let row = `<tr>
+              <td>${r[0] || ''}</td>
+              <td style="color:#2e7d32; font-weight:bold;">৳ ${totalRec}</td>
+              <td style="color:#c62828;">৳ ${r[8] || 0}</td>
+              <td>${r[9] || '-'}</td>
+              <td>৳ ${r[17] || 0}</td>
+              <td>${slipLink}</td>
+            </tr>`;
+            tbody.innerHTML += row;
+          }
         }
       }
       if (count === 0) {
@@ -515,13 +514,20 @@
 
     function handleScriptResponse(data) {
       document.getElementById("loadingText").style.display = "none";
-      allAdminRecords = data;
-      renderTable(data);
-      updateSummaryCards(data);
+      allAdminRecords = data || [];
+      renderTable(allAdminRecords);
+      updateSummaryCards(allAdminRecords);
     }
 
     function updateSummaryCards(data) {
-      if (!data || data.length <= 1) return;
+      if (!data || data.length <= 1) {
+        document.getElementById("totalEntriesCount").innerText = 0;
+        document.getElementById("totalReceivedAllSum").innerText = 0;
+        document.getElementById("totalReturnAllSum").innerText = 0;
+        document.getElementById("totalBankDepSum").innerText = 0;
+        return;
+      }
+
       let totalRecCount = data.length - 1;
       let totalReceivedAll = 0;
       let totalReturnAll = 0;
@@ -547,10 +553,16 @@
     function renderTable(data) {
       let tbody = document.querySelector("#dataTable tbody");
       tbody.innerHTML = "";
+
+      if (!data || data.length <= 1) {
+        tbody.innerHTML = "<tr><td colspan='17'>কোনো ডাটা পাওয়া যায়নি!</td></tr>";
+        return;
+      }
+
       for (let i = 1; i < data.length; i++) {
         let r = data[i];
         
-        let makeLink = (url, label) => url && url.startsWith('http') ? `<a class="slip-btn" href="${url}" target="_blank">${label}</a>` : '-';
+        let makeLink = (url, label) => (url && String(url).startsWith('http')) ? `<a class="slip-btn" href="${url}" target="_blank">${label}</a>` : '-';
 
         let row = `<tr>
           <td>${r[0] || ''}</td>
