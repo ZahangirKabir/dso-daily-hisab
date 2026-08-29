@@ -19,18 +19,34 @@
     .denom-row { display: flex; align-items: center; gap: 10px; margin-bottom: 5px; }
     .denom-row label { width: 80px; margin: 0; }
     .denom-row input { margin: 0; }
+    
+    /* Table Styling with Different Header Colors */
     table { width: 100%; border-collapse: collapse; margin-top: 10px; font-size: 11px; }
     th, td { border: 1px solid #ddd; padding: 8px; text-align: center; }
-    th { background: #00796b; color: white; }
+    
+    th.th-base { background: #37474f; color: white; }
+    th.th-rec { background: #2e7d32; color: white; } /* Received Header - Green */
+    th.th-ret { background: #c62828; color: white; } /* Return/Deposit Header - Red */
+    th.th-cash { background: #00796b; color: white; } /* Cash Header - Teal */
+    
     .total-box { background: #e0f2f1; padding: 10px; border-radius: 6px; border: 1px solid #80cbc4; text-align: center; margin-bottom: 15px; }
     
+    .summary-box { display: flex; gap: 10px; margin-bottom: 15px; }
+    .sub-sum-box { flex: 1; background: #e8f5e9; padding: 10px; border-radius: 6px; border: 1px solid #a5d6a7; text-align: center; }
+    .sub-sum-box h4 { margin: 0 0 5px 0; font-size: 13px; color: #1b5e20; }
+    .sub-sum-box p { margin: 0; font-size: 15px; font-weight: bold; color: #2e7d32; }
+
     .dashboard-cards { display: flex; gap: 10px; margin-bottom: 15px; flex-wrap: wrap; }
-    .dash-card { flex: 1; min-width: 120px; background: #e0f2f1; padding: 15px; border-radius: 8px; text-align: center; border: 1px solid #b2dfdb; }
+    .dash-card { flex: 1; min-width: 120px; background: #e0f2f1; padding: 12px; border-radius: 8px; text-align: center; border: 1px solid #b2dfdb; }
     .dash-card h4 { margin: 0 0 5px 0; font-size: 12px; color: #004d40; }
-    .dash-card p { margin: 0; font-size: 16px; font-weight: bold; color: #00796b; }
+    .dash-card p { margin: 0; font-size: 15px; font-weight: bold; color: #00796b; }
 
     .filter-box { display: flex; gap: 10px; margin-bottom: 10px; flex-wrap: wrap; }
     .filter-box input { margin: 0; }
+
+    /* Form Section Titles */
+    .sec-rec-title { color: #2e7d32; border-bottom: 2px solid #2e7d32; padding-bottom: 4px; margin-top: 10px; }
+    .sec-ret-title { color: #c62828; border-bottom: 2px solid #c62828; padding-bottom: 4px; margin-top: 20px; }
   </style>
 </head>
 <body>
@@ -60,21 +76,19 @@
       <button class="btn-logout" onclick="logout()">Logout</button>
     </div>
     
-    <h4>Received Section</h4>
+    <h4 class="sec-rec-title">Received Section</h4>
     <label>e-Money Received:</label>
-    <input type="number" id="emReceived" placeholder="0">
+    <input type="number" id="emReceived" oninput="calcDsoSum()" placeholder="0">
     <label>Cash Received:</label>
-    <input type="number" id="cashReceived" placeholder="0">
+    <input type="number" id="cashReceived" oninput="calcDsoSum()" placeholder="0">
     <label>DSO Received:</label>
-    <input type="number" id="dsoReceived" placeholder="0">
+    <input type="number" id="dsoReceived" oninput="calcDsoSum()" placeholder="0">
     <label>Bank Received Amount:</label>
-    <input type="number" id="bankReceived" placeholder="0">
+    <input type="number" id="bankReceived" oninput="calcDsoSum()" placeholder="0">
 
-    <hr style="border: 0.5px solid #eee; margin: 20px 0;">
-
-    <h4>Deposit & Return Section</h4>
+    <h4 class="sec-ret-title">Deposit & Return Section</h4>
     <label>e-Money Return:</label>
-    <input type="number" id="emReturn" placeholder="0">
+    <input type="number" id="emReturn" oninput="calcDsoSum()" placeholder="0">
     <label>Bank Deposit:</label>
     <input type="number" id="bankDeposit" placeholder="0">
     <label>Deposit Bank Name:</label>
@@ -84,7 +98,19 @@
     <label>Cash Deposit:</label>
     <input type="number" id="cashDeposit" placeholder="0">
 
-    <hr style="border: 0.5px solid #eee; margin: 20px 0;">
+    <!-- DSO Live Summary Box -->
+    <div class="summary-box" style="margin-top: 15px;">
+      <div class="sub-sum-box">
+        <h4>Total Received</h4>
+        <p>৳ <span id="dsoTotalReceivedDisplay">0</span></p>
+      </div>
+      <div class="sub-sum-box" style="background: #ffebee; border-color: #ffcdd2;">
+        <h4 style="color: #c62828;">Total Return</h4>
+        <p style="color: #b71c1c;">৳ <span id="dsoTotalReturnDisplay">0</span></p>
+      </div>
+    </div>
+
+    <hr style="border: 0.5px solid #eee; margin: 15px 0;">
 
     <h4>Cash Denomination Calculator</h4>
     <div class="denom-row"><label>৳ 1000:</label><input type="number" class="note" data-value="1000" oninput="calcCash()" placeholder="0"></div>
@@ -107,15 +133,19 @@
       <button class="btn-logout" onclick="logout()">Logout</button>
     </div>
 
-    <!-- Dashboard Summary -->
+    <!-- Admin Dashboard Cards -->
     <div class="dashboard-cards">
       <div class="dash-card">
         <h4>মোট এন্ট্রি</h4>
         <p id="totalEntriesCount">0</p>
       </div>
-      <div class="dash-card">
-        <h4>মোট ক্যাশ রিসিভ</h4>
-        <p>৳ <span id="totalCashRecSum">0</span></p>
+      <div class="dash-card" style="background: #e8f5e9; border-color: #a5d6a7;">
+        <h4 style="color: #1b5e20;">মোট রিসিভড (All DSO)</h4>
+        <p style="color: #2e7d32;">৳ <span id="totalReceivedAllSum">0</span></p>
+      </div>
+      <div class="dash-card" style="background: #ffebee; border-color: #ffcdd2;">
+        <h4 style="color: #c62828;">মোট রিটার্ন (All DSO)</h4>
+        <p style="color: #b71c1c;">৳ <span id="totalReturnAllSum">0</span></p>
       </div>
       <div class="dash-card">
         <h4>মোট ব্যাংক ডিপোজিট</h4>
@@ -134,19 +164,25 @@
       <table id="dataTable">
         <thead>
           <tr>
-            <th>Date</th>
-            <th>Month</th>
-            <th>DSO ID</th>
-            <th>e-Mon Rec</th>
-            <th>Cash Rec</th>
-            <th>DSO Rec</th>
-            <th>Bank Rec</th>
-            <th>e-Mon Ret</th>
-            <th>Bank Dep</th>
-            <th>Bank Name</th>
-            <th>DSO Trans</th>
-            <th>Cash Dep</th>
-            <th>Calculated Cash</th>
+            <th class="th-base">Date</th>
+            <th class="th-base">Month</th>
+            <th class="th-base">DSO ID</th>
+            
+            <!-- Received Header Columns (Green) -->
+            <th class="th-rec">e-Mon Rec</th>
+            <th class="th-rec">Cash Rec</th>
+            <th class="th-rec">DSO Rec</th>
+            <th class="th-rec">Bank Rec</th>
+            
+            <!-- Return & Deposit Header Columns (Red/Orange) -->
+            <th class="th-ret">e-Mon Ret</th>
+            <th class="th-ret">Bank Dep</th>
+            <th class="th-ret">Bank Name</th>
+            <th class="th-ret">DSO Trans</th>
+            <th class="th-ret">Cash Dep</th>
+            
+            <!-- Calculated Cash Header Column -->
+            <th class="th-cash">Calculated Cash</th>
           </tr>
         </thead>
         <tbody></tbody>
@@ -193,6 +229,19 @@
       document.getElementById("dsoScreen").classList.add("hidden");
       document.getElementById("adminScreen").classList.add("hidden");
       document.getElementById(id).classList.remove("hidden");
+    }
+
+    function calcDsoSum() {
+      let emRec = parseFloat(document.getElementById("emReceived").value) || 0;
+      let cashRec = parseFloat(document.getElementById("cashReceived").value) || 0;
+      let dsoRec = parseFloat(document.getElementById("dsoReceived").value) || 0;
+      let bankRec = parseFloat(document.getElementById("bankReceived").value) || 0;
+
+      let totalReceived = emRec + cashRec + dsoRec + bankRec;
+      document.getElementById("dsoTotalReceivedDisplay").innerText = totalReceived;
+
+      let emRet = parseFloat(document.getElementById("emReturn").value) || 0;
+      document.getElementById("dsoTotalReturnDisplay").innerText = emRet;
     }
 
     function calcCash() {
@@ -267,16 +316,24 @@
     function updateSummaryCards(data) {
       if (!data || data.length <= 1) return;
       let totalRecCount = data.length - 1;
-      let totalCashRec = 0;
+      let totalReceivedAll = 0;
+      let totalReturnAll = 0;
       let totalBankDep = 0;
 
       for (let i = 1; i < data.length; i++) {
-        totalCashRec += parseFloat(data[i][4]) || 0;
+        let emRec = parseFloat(data[i][3]) || 0;
+        let cashRec = parseFloat(data[i][4]) || 0;
+        let dsoRec = parseFloat(data[i][5]) || 0;
+        let bankRec = parseFloat(data[i][6]) || 0;
+
+        totalReceivedAll += (emRec + cashRec + dsoRec + bankRec);
+        totalReturnAll += parseFloat(data[i][7]) || 0;
         totalBankDep += parseFloat(data[i][8]) || 0;
       }
 
       document.getElementById("totalEntriesCount").innerText = totalRecCount;
-      document.getElementById("totalCashRecSum").innerText = totalCashRec;
+      document.getElementById("totalReceivedAllSum").innerText = totalReceivedAll;
+      document.getElementById("totalReturnAllSum").innerText = totalReturnAll;
       document.getElementById("totalBankDepSum").innerText = totalBankDep;
     }
 
@@ -290,16 +347,16 @@
           <td>${r[0] || ''}</td>
           <td>${r[1] || ''}</td>
           <td><b>${r[2] || ''}</b></td>
-          <td>${r[3] || 0}</td>
-          <td>${r[4] || 0}</td>
-          <td>${r[5] || 0}</td>
-          <td>${r[6] || 0}</td>
-          <td>${r[7] || 0}</td>
-          <td>${r[8] || 0}</td>
-          <td>${r[9] || ''}</td>
-          <td>${r[10] || 0}</td>
-          <td>${r[11] || 0}</td>
-          <td><b>৳ ${r[lastColIndex] || 0}</b></td>
+          <td style="background:#f1f8e9;">${r[3] || 0}</td>
+          <td style="background:#f1f8e9;">${r[4] || 0}</td>
+          <td style="background:#f1f8e9;">${r[5] || 0}</td>
+          <td style="background:#f1f8e9;">${r[6] || 0}</td>
+          <td style="background:#ffebee;">${r[7] || 0}</td>
+          <td style="background:#ffebee;">${r[8] || 0}</td>
+          <td style="background:#ffebee;">${r[9] || ''}</td>
+          <td style="background:#ffebee;">${r[10] || 0}</td>
+          <td style="background:#ffebee;">${r[11] || 0}</td>
+          <td style="background:#e0f2f1;"><b>৳ ${r[lastColIndex] || 0}</b></td>
         </tr>`;
         tbody.innerHTML += row;
       }
@@ -312,6 +369,7 @@
         return row.some(cell => String(cell).toLowerCase().includes(q));
       });
       renderTable(filtered);
+      updateSummaryCards(filtered);
     }
   </script>
 </body>
