@@ -24,7 +24,6 @@
     th { background: #00796b; color: white; }
     .total-box { background: #e0f2f1; padding: 10px; border-radius: 6px; border: 1px solid #80cbc4; text-align: center; margin-bottom: 15px; }
     
-    /* Dashboard Cards */
     .dashboard-cards { display: flex; gap: 10px; margin-bottom: 15px; flex-wrap: wrap; }
     .dash-card { flex: 1; min-width: 120px; background: #e0f2f1; padding: 15px; border-radius: 8px; text-align: center; border: 1px solid #b2dfdb; }
     .dash-card h4 { margin: 0 0 5px 0; font-size: 12px; color: #004d40; }
@@ -253,18 +252,21 @@
       });
     }
 
+    // CORS সমস্যা দূর করতে JSONP দিয়ে ডাটা লোড করার ফাংশন
     function loadAdminData() {
       document.getElementById("loadingText").style.display = "block";
-      fetch(GOOGLE_SCRIPT_URL)
-        .then(res => res.json())
-        .then(data => {
-          document.getElementById("loadingText").style.display = "none";
-          allAdminRecords = data;
-          renderTable(data);
-          updateSummaryCards(data);
-        }).catch(err => {
-          document.getElementById("loadingText").innerText = "ডাটা লোড করতে সমস্যা হয়েছে।";
-        });
+      document.getElementById("loadingText").innerText = "গুগল শিট থেকে তথ্য লোড হচ্ছে...";
+      
+      const script = document.createElement('script');
+      script.src = GOOGLE_SCRIPT_URL + "?callback=handleScriptResponse";
+      document.body.appendChild(script);
+    }
+
+    function handleScriptResponse(data) {
+      document.getElementById("loadingText").style.display = "none";
+      allAdminRecords = data;
+      renderTable(data);
+      updateSummaryCards(data);
     }
 
     function updateSummaryCards(data) {
