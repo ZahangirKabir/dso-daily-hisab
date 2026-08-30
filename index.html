@@ -39,10 +39,9 @@
     td { padding: 6px; }
     tr:nth-child(even) { background: #f9f9f9; }
 
-    /* স্লিপ ইমেজের প্রিভিউ স্টাইল */
     .slip-img-preview {
-      width: 50px;
-      height: 50px;
+      width: 45px;
+      height: 45px;
       object-fit: cover;
       border-radius: 4px;
       border: 1px solid #00695c;
@@ -50,7 +49,7 @@
       transition: transform 0.2s;
     }
     .slip-img-preview:hover {
-      transform: scale(1.3);
+      transform: scale(1.4);
     }
 
     #ocrStatus { background: #fff3e0; padding: 8px; border-radius: 4px; color: #e65100; margin-bottom: 10px; display: none; font-size: 13px; }
@@ -156,7 +155,7 @@
   </div>
 
   <script>
-    const GOOGLE_SCRIPT_URL = "YOUR_GOOGLE_APPS_SCRIPT_URL_HERE"; // আপনার Apps Script Web App URL দিন
+    const GOOGLE_SCRIPT_URL = "YOUR_GOOGLE_APPS_SCRIPT_URL_HERE"; // আপনার Apps Script URL বসান
 
     const KNOWN_BANKS = [
       { name: "Islami Bank Bangladesh", keywords: ["islami", "ibbl"] },
@@ -167,7 +166,6 @@
     ];
 
     let currentUser = null;
-    let rawSheetData = [];
 
     function handleLogin() {
       const id = document.getElementById("loginId").value.trim();
@@ -349,18 +347,24 @@
       });
     }
 
+    // JSONP এর মাধ্যমে নিরাপদে ডাটা লোড করা
     function loadData() {
-      fetch(GOOGLE_SCRIPT_URL)
-        .then(res => res.json())
-        .then(data => {
-          rawSheetData = data;
-          if (currentUser.toLowerCase() === "admin") {
-            updateSummaryCards(data);
-            renderAdminTable(data);
-          } else {
-            renderDsoHistory(data);
-          }
-        }).catch(err => console.error("Error loading data:", err));
+      const oldScript = document.getElementById("jsonpScript");
+      if (oldScript) oldScript.remove();
+
+      const script = document.createElement("script");
+      script.id = "jsonpScript";
+      script.src = `${GOOGLE_SCRIPT_URL}?callback=handleSheetDataResponse`;
+      document.body.appendChild(script);
+    }
+
+    function handleSheetDataResponse(data) {
+      if (currentUser.toLowerCase() === "admin") {
+        updateSummaryCards(data);
+        renderAdminTable(data);
+      } else {
+        renderDsoHistory(data);
+      }
     }
 
     function updateSummaryCards(data) {
@@ -380,7 +384,6 @@
       document.getElementById("totalBankDepSum").innerText = totalBankDep;
     }
 
-    // ছবি সরাসরি ডিসপ্লে করার জন্য হেল্পার ফাংশন
     function makeImageTag(url) {
       if (url && String(url).startsWith('http')) {
         return `<a href="${url}" target="_blank"><img src="${url}" class="slip-img-preview" alt="Slip" title="ক্লিক করে বড় ছবি দেখুন"></a>`;
